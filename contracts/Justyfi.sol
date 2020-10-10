@@ -21,7 +21,7 @@ contract Justyfi is ERC20 {
   mapping (address => uint) private _stakedBalances;
   uint private _stakedTotalSupply;
 
-  mapping (address => uint) private _diviendsPaid;
+  mapping (address => uint) private _dividendsPaid;
   uint private _dividendPerToken;
 
   bool private _liquidityEventClosed;
@@ -59,13 +59,17 @@ contract Justyfi is ERC20 {
     return _stakedBalances[account];
   }
 
+  function dividendsOf (address account) public view returns (uint) {
+    return (stakedBalanceOf(account) * _dividendPerToken - _dividendsPaid[account]) / FLOAT_SCALAR;
+  }
+
   function stake (uint amount) external {
     _transfer(msg.sender, address(this), amount);
 
     _stakedBalances[msg.sender] = _stakedBalances[msg.sender].add(amount);
     _stakedTotalSupply = _stakedTotalSupply.add(amount);
 
-    _diviendsPaid[msg.sender] += amount * _dividendPerToken;
+    _dividendsPaid[msg.sender] += amount * _dividendPerToken;
   }
 
   function unstake (uint amount) external {
@@ -85,7 +89,7 @@ contract Justyfi is ERC20 {
     uint amount = dividendsOf(msg.sender);
 
     if (amount > 0) {
-      _diviendsPaid[msg.sender] += amount.mul(FLOAT_SCALAR);
+      _dividendsPaid[msg.sender] += amount.mul(FLOAT_SCALAR);
       _transfer(address(this), msg.sender, amount);
     }
   }
@@ -94,10 +98,6 @@ contract Justyfi is ERC20 {
     // TODO: rebase
 
     emit Rebase(_epoch++, _stakedTotalSupply);
-  }
-
-  function dividendsOf (address account) public view returns (uint) {
-    return (stakedBalanceOf(account) * _dividendPerToken - _diviendsPaid[account]) / FLOAT_SCALAR;
   }
 
   function closeLiquidityEvent () external {
