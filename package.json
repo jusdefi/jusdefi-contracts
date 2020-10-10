@@ -1,16 +1,16 @@
 {
-  "name": "buidler-web3-template",
+  "name": "justyfi",
   "version": "0.0.0",
   "license": "UNLICENSED",
   "private": true,
-  "description": "Template for buidler/web3 projects",
+  "description": "JUSTYFI token contracts",
   "keywords": [
     "buidler",
     "web3"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ItsNickBarry/buidler-web3-template.git"
+    "url": "git+https://github.com/justyfi/justyfi.git"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.7",
