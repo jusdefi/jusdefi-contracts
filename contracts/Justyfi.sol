@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 
-contract Justyfi is ERC20 {
+contract JusDeFi is ERC20 {
   using SafeMath for uint;
 
   uint private constant INITIAL_SUPPLY = 21000 ether;
@@ -37,7 +37,7 @@ contract Justyfi is ERC20 {
     address payable uniswapRouter
   )
     payable
-    ERC20('JUSTYFI', 'JUSTYFI')
+    ERC20('JusDeFi', 'JDFI')
   {
     _uniswapRouter = uniswapRouter;
 
@@ -73,7 +73,7 @@ contract Justyfi is ERC20 {
   }
 
   function unstake (uint amount) external {
-    require(stakedBalanceOf(msg.sender) >= amount, 'JUSTYFI: insufficient staked balance');
+    require(stakedBalanceOf(msg.sender) >= amount, 'JusDeFi: insufficient staked balance');
 
     uint burned = amount * BURN_RATE / BP_DIVISOR;
     _burn(address(this), burned);
@@ -101,8 +101,8 @@ contract Justyfi is ERC20 {
   }
 
   function closeLiquidityEvent () external {
-    require(_liquidityEventClosedAt <= block.timestamp, 'JUSTYFI: liquidity event still in progress');
-    require(!_liquidityEventClosed, 'JUSTYFI: liquidity event has ended');
+    require(_liquidityEventClosedAt <= block.timestamp, 'JusDeFi: liquidity event still in progress');
+    require(!_liquidityEventClosed, 'JusDeFi: liquidity event has ended');
 
     _liquidityEventClosed = true;
 
@@ -123,9 +123,9 @@ contract Justyfi is ERC20 {
   }
 
   receive () external payable {
-    require(!_liquidityEventClosed, 'JUSTYFI: liquidity event has ended');
+    require(!_liquidityEventClosed, 'JusDeFi: liquidity event has ended');
     uint amount = msg.value.mul(4);
-    require(_stakedTotalSupply + amount <= 10000 ether, 'JUSTYFI: deposit limit exceeded');
+    require(_stakedTotalSupply + amount <= 10000 ether, 'JusDeFi: deposit limit exceeded');
     _stakedBalances[msg.sender] = _stakedBalances[msg.sender].add(amount);
     _stakedTotalSupply = _stakedTotalSupply.add(amount);
   }
@@ -140,7 +140,7 @@ contract Justyfi is ERC20 {
       return;
     }
 
-    require(_liquidityEventClosed, 'JUSTYFI: liquidity event has not ended');
+    require(_liquidityEventClosed, 'JusDeFi: liquidity event has not ended');
 
     // TODO: redundant burn?
     // TODO: burn from transfer amount or remaining balance?

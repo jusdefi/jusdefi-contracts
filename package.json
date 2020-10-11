@@ -1,16 +1,16 @@
 {
-  "name": "justyfi",
+  "name": "jusdefi",
   "version": "0.0.0",
   "license": "UNLICENSED",
   "private": true,
-  "description": "JUSTYFI token contracts",
+  "description": "JusDeFi token contracts",
   "keywords": [
     "buidler",
     "web3"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/justyfi/justyfi.git"
+    "url": "git+https://github.com/jusdefi/jusdefi.git"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.7",

@@ -1,4 +1,4 @@
-# JUSTYFI
+# JusDeFi
 
 Transparent re-implementation of AMPLYFI.
 
