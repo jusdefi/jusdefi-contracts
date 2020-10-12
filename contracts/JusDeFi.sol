@@ -130,29 +130,13 @@ contract JusDeFi is ERC20 {
   }
 
   function _beforeTokenTransfer (address from, address to, uint amount) override internal {
-    // TODO: call custom function from overridden transfer and transferFrom instead of using hook?
-
     super._beforeTokenTransfer(from, to, amount);
 
-    if (from == address(this) || to == address(this) || from == address(0) || to == address(0)) {
-      // staking, unstaking, minting, and burning do not burn tokens
-      return;
-    }
-
-    require(_liquidityEventClosed, 'JusDeFi: liquidity event has not ended');
-
-    // TODO: redundant burn?
-    // TODO: burn from transfer amount or remaining balance?
-
-    uint burned = amount * BURN_RATE / BP_DIVISOR;
-
-    if (_stakedTotalSupply > 0) {
-      burned = burned.div(2);
-      _dividendPerToken += burned * FLOAT_SCALAR / _stakedTotalSupply;
-    }
-
-    if (burned > 0) {
-      _burn(from, burned);
+    if (!_liquidityEventClosed) {
+      require(
+        from == address(this) || to == address(this) || from == address(0) || to == address(0),
+        'JusDeFi: liquidity event has not ended'
+      );
     }
   }
 }
