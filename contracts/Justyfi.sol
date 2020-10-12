@@ -10,7 +10,6 @@ contract JusDeFi is ERC20 {
   using SafeMath for uint;
 
   uint private constant INITIAL_SUPPLY = 21000 ether;
-  uint private constant SUPPLY_FLOOR = INITIAL_SUPPLY / 100;
   uint private constant OWNER_SUPPLY = 1000 ether;
 
   uint private constant FLOAT_SCALAR = 2**64;
@@ -18,11 +17,11 @@ contract JusDeFi is ERC20 {
   uint private constant BURN_RATE = 1500;
   uint private constant BP_DIVISOR = 10000;
 
-  mapping (address => uint) private _stakedBalances;
   uint private _stakedTotalSupply;
+  mapping (address => uint) private _stakedBalances;
 
-  mapping (address => uint) private _dividendsPaid;
   uint private _dividendPerToken;
+  mapping (address => uint) private _dividendsPaid;
 
   bool private _liquidityEventClosed;
   uint private _liquidityEventClosedAt;
@@ -146,11 +145,6 @@ contract JusDeFi is ERC20 {
     // TODO: burn from transfer amount or remaining balance?
 
     uint burned = amount * BURN_RATE / BP_DIVISOR;
-
-    if (totalSupply().sub(burned) < SUPPLY_FLOOR) {
-      // only burn until supply floor is reached
-      burned = totalSupply().sub(SUPPLY_FLOOR);
-    }
 
     if (_stakedTotalSupply > 0) {
       burned = burned.div(2);
