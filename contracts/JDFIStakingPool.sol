@@ -10,8 +10,10 @@ contract JDFIStakingPool is StakingPool {
 
   mapping (address => uint) private _lockedBalances;
 
-  constructor () ERC20('Staked JusDeFi', 'JDFI/S') {
+  constructor (uint initialSupply) ERC20('Staked JDFI', 'JDFI/S') {
     _jusdefi = msg.sender;
+    // initialSupply is minted before receipt of JDFI; see JusDeFi constructor
+    _mint(msg.sender, initialSupply);
   }
 
   /**
@@ -58,6 +60,15 @@ contract JDFIStakingPool is StakingPool {
     uint amount = msg.value * 4;
     require(_lockedBalances[msg.sender] >= amount, 'JusDeFi: insufficient locked balance');
     _lockedBalances[msg.sender] -= amount;
+  }
+
+  /**
+   * @notice distribute rewards to stakers
+   * @param amount quantity to distribute
+   */
+  function accrueRewards (uint amount) external {
+    require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
+    _accrueRewards(amount);
   }
 
   /**

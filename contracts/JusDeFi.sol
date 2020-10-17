@@ -10,15 +10,20 @@ import './JDFIStakingPool.sol';
 import './UniswapStakingPool.sol';
 
 contract JusDeFi is IJusDeFi, ERC20 {
-  uint private constant BURN_RATE = 1500;
-  uint private constant BP_DIVISOR = 10000;
-
-  uint private _liquidityEventClosedAt;
-
   address payable private _uniswapRouter;
 
   JDFIStakingPool private _jdfiStakingPool;
   UniswapStakingPool private _uniswapStakingPool;
+
+  bool private _liquidityEventOpen;
+  uint private _liquidityEventClosedAt;
+
+  uint private _lastBuybackAt;
+  uint private _lastRebaseAt;
+
+  // burn rate specified in basis points
+  uint private _burnRate;
+  uint private constant BP_DIVISOR = 10000;
 
   constructor (
     address payable uniswapRouter
@@ -27,18 +32,21 @@ contract JusDeFi is IJusDeFi, ERC20 {
   {
     _uniswapRouter = uniswapRouter;
 
-    _jdfiStakingPool = new JDFIStakingPool();
+
+    // liquidity event distribution + justice reserve + team reserve
+    uint initialStake = 10000 ether + 10000 ether + 2000 ether;
+
+    _jdfiStakingPool = new JDFIStakingPool(initialStake);
     _uniswapStakingPool = new UniswapStakingPool(uniswapRouter);
 
-    _liquidityEventClosedAt = block.timestamp + 1 weeks;
+    // mint JDFI for staking pool after-the-fact to match minted JDFI/S
+    _mint(address(_jdfiStakingPool), initialStake);
 
-    // mint and stake tokens for airdrop
-    _mint(address(this), 10000 ether);
-    _jdfiStakingPool.stake(10000 ether);
-    _jdfiStakingPool.transfer(msg.sender, 10000 ether);
+    // transfer team reserve and justice reserve to sender for distribution
+    _jdfiStakingPool.transfer(msg.sender, initialStake);
 
-    // mint developers' reserve
-    _mint(msg.sender, 2000 ether);
+    _liquidityEventClosedAt = block.timestamp + 3 days;
+    _liquidityEventOpen = true;
   }
 
   /**
@@ -47,47 +55,78 @@ contract JusDeFi is IJusDeFi, ERC20 {
    * @param amount quantity of tokens to transfer, before deduction
    */
   function burnAndTransfer (address account, uint amount) override external {
-    uint withheld = amount * BURN_RATE / BP_DIVISOR;
+    uint withheld = amount * _burnRate / BP_DIVISOR;
     _transfer(msg.sender, address(this), withheld);
     _burn(address(this), withheld / 2);
     _transfer(msg.sender, account, amount - withheld);
   }
 
   /**
-   * TODO: frontrunning?
+   * @notice withdraw Uniswap liquidity in excess of initial amount, purchase and burn JDFI
    */
-  // function buyback () external;
+  function buyback () external {
+    // TODO: require Friday
+    require(block.timestamp - _lastBuybackAt > 3 days);
+    _lastBuybackAt = block.timestamp;
+
+    // TODO: frontrunning?
+
+    // TODO: buyback
+  }
 
   /**
-   * TODO: rebase
+   * @notice distribute collected fees to staking pools
    */
-  // function rebase () external;
+  function rebase () external {
+    // TODO: require Sunday
+    require(block.timestamp - _lastRebaseAt > 3 days);
+    _lastRebaseAt = block.timestamp;
+
+    // _jdfiStakingPool.accrueRewards(asdf);
+    // _uniswapStakingPool.accrueRewards(ghjk - asdf);
+
+    // TODO: set burn rate
+  }
 
   /**
    * @notice deposit ETH to receive JDFI at rate of 1:4
    */
   function liquidityEventDeposit () external payable {
-    require(block.timestamp < _liquidityEventClosedAt, 'JusDeFi: liquidity event has closed');
-    // TODO: supply cap
+    require(_liquidityEventOpen, 'JusDeFi: liquidity event has closed');
+    _jdfiStakingPool.transfer(msg.sender, msg.value * 4);
+  }
 
-    uint amount = msg.value * 4;
+  /**
+   * @notice close liquidity event, add Uniswap liquidity, burn undistributed JDFI
+   */
+  function liquidityEventClose () external {
+    require(block.timestamp > _liquidityEventClosedAt, 'JusDeFi: liquidity event still in progress');
+    _liquidityEventOpen = false;
 
-    _mint(address(this), amount * 2);
+    uint remaining = _jdfiStakingPool.balanceOf(address(this));
+    uint distributed = 10000 ether - remaining;
 
-    // TODO: mint and stake all at once
-    _jdfiStakingPool.stake(amount);
-    _jdfiStakingPool.transfer(msg.sender, amount);
+    // burn rate initialized at zero, so unstaked amount is 1:1
+    _jdfiStakingPool.unstake(remaining);
+    _burn(address(this), remaining * 2);
+
+    _mint(address(this), distributed);
 
     IUniswapV2Router02(_uniswapRouter).addLiquidityETH{
-      value: msg.value
+      value: distributed / 4
     }(
       address(this),
-      amount,
-      amount,
-      msg.value,
+      distributed,
+      distributed,
+      distributed / 4,
       address(this),
       block.timestamp
     );
+
+    // TODO: store lp amount for buyback threshold
+
+    // set initial burn rate
+    _burnRate = 1500;
   }
 
   /**
@@ -97,13 +136,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
    * @param amount quantity transferred
    */
   function _beforeTokenTransfer (address from, address to, uint amount) override internal {
+    require(!_liquidityEventOpen, 'JusDeFi: liquidity event still in progress');
     super._beforeTokenTransfer(from, to, amount);
-
-    if (block.timestamp < _liquidityEventClosedAt) {
-      require(
-        from == address(this) || to == address(this) || from == address(0) || to == address(0),
-        'JusDeFi: liquidity event has not ended'
-      );
-    }
   }
 }

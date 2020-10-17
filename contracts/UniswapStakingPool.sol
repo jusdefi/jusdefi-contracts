@@ -138,4 +138,13 @@ contract UniswapStakingPool is StakingPool {
     _deductRewards(msg.sender);
     msg.sender.sendValue(amountETH);
   }
+
+  /**
+   * @notice distribute rewards to stakers
+   * @param amount quantity to distribute
+   */
+  function accrueRewards (uint amount) external {
+    require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
+    _accrueRewards(amount);
+  }
 }

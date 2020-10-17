@@ -22,20 +22,20 @@ abstract contract StakingPool is ERC20 {
   }
 
   /**
-   * @notice distribute rewards to stakers
-   * @param amount quantity to distribute
-   */
-  function accrueRewards (uint amount) external {
-    _cumulativeRewardPerToken += amount * REWARD_SCALAR / totalSupply();
-  }
-
-  /**
    * @notice get undistributed rewards for account, scaled by REWARD_SCALAR
    * @param account benificiary of rewards
    * @return uint scaled reward amount
    */
   function _scaledRewardsOf (address account) internal view returns (uint) {
     return balanceOf(account) * _cumulativeRewardPerToken - _rewardsDeducted[account];
+  }
+
+  /**
+   * @notice distribute rewards to stakers
+   * @param amount quantity to distribute
+   */
+  function _accrueRewards (uint amount) internal {
+    _cumulativeRewardPerToken += amount * REWARD_SCALAR / totalSupply();
   }
 
   /**
