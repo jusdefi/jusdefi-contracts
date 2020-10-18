@@ -1,27 +1,22 @@
 module.exports = {
   'env': {
-    'browser': true,
-    'commonjs': true,
+    'node': true,
     'es6': true,
+    'mocha': true,
   },
+  'plugins': [
+    'mocha',
+  ],
   'extends': [
     'eslint:recommended',
+    'plugin:mocha/recommended',
   ],
   'globals': {
-    'Atomics': 'readonly',
-    'SharedArrayBuffer': 'readonly',
-    'process': 'readonly',
+    'usePlugin': 'readonly',
     'web3': 'readonly',
     'artifacts': 'readonly',
     'contract': 'readonly',
-    'describe': 'readonly',
-    'it': 'readonly',
-    'before': 'readonly',
-    'beforeEach': 'readonly',
-    'after': 'readonly',
-    'afterEach': 'readonly',
     'assert': 'readonly',
-    'usePlugin': 'readonly'
   },
   'parserOptions': {
     'ecmaVersion': 2018,
@@ -37,7 +32,7 @@ module.exports = {
       'unix',
     ],
     'no-trailing-spaces': [
-      'error'
+      'error',
     ],
     'quotes': [
       'error',
@@ -68,7 +63,6 @@ module.exports = {
         'mode': 'minimum',
       },
     ],
-    // override
-    'vue/max-attributes-per-line': 0,
+    'mocha/no-top-level-hooks': 'off',
   },
 };
