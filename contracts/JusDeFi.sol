@@ -3,7 +3,9 @@
 pragma solidity ^0.7.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import '@uniswap/v2-periphery/contracts/interfaces/IWETH.sol';
 
 import './IJusDeFi.sol';
 import './JDFIStakingPool.sol';
@@ -11,12 +13,15 @@ import './UniswapStakingPool.sol';
 
 contract JusDeFi is IJusDeFi, ERC20 {
   address payable private _uniswapRouter;
+  address public _uniswapPair;
 
-  JDFIStakingPool private _jdfiStakingPool;
-  UniswapStakingPool private _uniswapStakingPool;
+  JDFIStakingPool public _jdfiStakingPool;
+  UniswapStakingPool public _uniswapStakingPool;
 
-  bool private _liquidityEventOpen;
-  uint private _liquidityEventClosedAt;
+  bool public _liquidityEventOpen;
+  uint public _liquidityEventClosedAt;
+
+  uint private _initialLiquidity;
 
   uint private _lastBuybackAt;
   uint private _lastRebaseAt;
@@ -32,18 +37,25 @@ contract JusDeFi is IJusDeFi, ERC20 {
   {
     _uniswapRouter = uniswapRouter;
 
-
     // liquidity event distribution + justice reserve + team reserve
     uint initialStake = 10000 ether + 10000 ether + 2000 ether;
 
     _jdfiStakingPool = new JDFIStakingPool(initialStake);
-    _uniswapStakingPool = new UniswapStakingPool(uniswapRouter);
+
+    _uniswapPair = IUniswapV2Factory(
+      IUniswapV2Router02(uniswapRouter).factory()
+    ).createPair(
+      IUniswapV2Router02(uniswapRouter).WETH(),
+      address(this)
+    );
+
+    _uniswapStakingPool = new UniswapStakingPool(_uniswapPair, uniswapRouter);
 
     // mint JDFI for staking pool after-the-fact to match minted JDFI/S
     _mint(address(_jdfiStakingPool), initialStake);
 
     // transfer team reserve and justice reserve to sender for distribution
-    _jdfiStakingPool.transfer(msg.sender, initialStake);
+    _jdfiStakingPool.transfer(msg.sender, initialStake - 10000 ether);
 
     _liquidityEventClosedAt = block.timestamp + 3 days;
     _liquidityEventOpen = true;
@@ -89,41 +101,41 @@ contract JusDeFi is IJusDeFi, ERC20 {
   }
 
   /**
-   * @notice deposit ETH to receive JDFI at rate of 1:4
+   * @notice deposit ETH to receive JDFI/S at rate of 1:4
    */
   function liquidityEventDeposit () external payable {
     require(_liquidityEventOpen, 'JusDeFi: liquidity event has closed');
-    _jdfiStakingPool.transfer(msg.sender, msg.value * 4);
+
+    try _jdfiStakingPool.transfer(msg.sender, msg.value * 4) returns (bool) {} catch {
+      revert('JusDeFi: deposit amount surpasses available supply');
+    }
   }
 
   /**
    * @notice close liquidity event, add Uniswap liquidity, burn undistributed JDFI
    */
   function liquidityEventClose () external {
-    require(block.timestamp > _liquidityEventClosedAt, 'JusDeFi: liquidity event still in progress');
+    require(block.timestamp >= _liquidityEventClosedAt, 'JusDeFi: liquidity event still in progress');
+    require(_liquidityEventOpen, 'JusDeFi: liquidity event has already ended');
     _liquidityEventOpen = false;
 
     uint remaining = _jdfiStakingPool.balanceOf(address(this));
     uint distributed = 10000 ether - remaining;
 
+    require(distributed >= 1 ether, 'JusDeFi: insufficient liquidity added');
+
     // burn rate initialized at zero, so unstaked amount is 1:1
     _jdfiStakingPool.unstake(remaining);
-    _burn(address(this), remaining * 2);
+    _burn(address(this), remaining);
 
-    _mint(address(this), distributed);
+    address pair = _uniswapPair;
+    address weth = IUniswapV2Router02(_uniswapRouter).WETH();
+    IWETH(weth).deposit{ value: distributed / 4 }();
+    IWETH(weth).transfer(pair, distributed / 4);
+    _mint(pair, distributed);
 
-    IUniswapV2Router02(_uniswapRouter).addLiquidityETH{
-      value: distributed / 4
-    }(
-      address(this),
-      distributed,
-      distributed,
-      distributed / 4,
-      address(this),
-      block.timestamp
-    );
-
-    // TODO: store lp amount for buyback threshold
+    // JDFI transfers are reverted up to this point; Uniswap pool is guaranteed to have no liquidity
+    _initialLiquidity = IUniswapV2Pair(pair).mint(address(this));
 
     // set initial burn rate
     _burnRate = 1500;

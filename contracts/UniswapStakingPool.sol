@@ -14,24 +14,18 @@ contract UniswapStakingPool is StakingPool {
   using Address for address payable;
 
   address private _jusdefi;
-  address private _weth;
-
-  address payable private _uniswapRouter;
   address private _uniswapPair;
+  address payable private _uniswapRouter;
 
   constructor (
+    address uniswapPair,
     address payable uniswapRouter
   )
     ERC20('Staked JDFI/WETH UNI-V2', 'JDFI-WETH-UNI-V2/S')
   {
     _jusdefi = msg.sender;
+    _uniswapPair = uniswapPair;
     _uniswapRouter = uniswapRouter;
-
-    _weth = IUniswapV2Router02(uniswapRouter).WETH();
-
-    _uniswapPair = IUniswapV2Factory(
-      IUniswapV2Router02(uniswapRouter).factory()
-    ).getPair(_jusdefi, _weth);
   }
 
   /**
