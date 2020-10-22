@@ -53,6 +53,14 @@ contract JDFIStakingPool is StakingPool {
   }
 
   /**
+   * @notice withdraw earned JDFI rewards
+   */
+  function withdraw () external {
+    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, rewardsOf(msg.sender));
+    _clearRewards(msg.sender);
+  }
+
+  /**
    * @notice deposit ETH to free locked token balance, at a rate of 1:4
    */
   function unlock () external payable {

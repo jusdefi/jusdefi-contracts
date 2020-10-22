@@ -62,6 +62,21 @@ contract JusDeFi is IJusDeFi, ERC20 {
   }
 
   /**
+  * @notice OpenZeppelin ERC20#transferFrom: enable transfers by staking pools without allowance
+  * @param from sender
+  * @param to recipient
+  * @param amount quantity transferred
+   */
+  function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
+    if (msg.sender == address(_jdfiStakingPool)) {
+      _transfer(from, to, amount);
+      return true;
+    } else {
+      return super.transferFrom(from, to, amount);
+    }
+  }
+
+  /**
    * @notice transfer tokens, deducting fee
    * @param account recipient of transfer
    * @param amount quantity of tokens to transfer, before deduction

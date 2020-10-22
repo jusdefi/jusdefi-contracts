@@ -71,10 +71,6 @@ contract('JusDeFi', function (accounts) {
   });
 
   describe('#transferFrom', function () {
-    it('does not require approval for JDFIStakingPool');
-
-    it('does not require approval for UniswapStakingPool');
-
     describe('reverts if', function () {
       it('liquidity event is still in progress', async function () {
         await expectRevert(
