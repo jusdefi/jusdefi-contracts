@@ -11,15 +11,11 @@ contract StakingPoolMock is StakingPool {
     _mint(account, amount);
   }
 
-  function scaledRewardsOf (address account) external view returns (uint) {
-    return _scaledRewardsOf(account);
+  function distributeRewards (uint amount) external {
+    _distributeRewards(amount);
   }
 
-  function accrueRewards (uint amount) external {
-    _accrueRewards(amount);
-  }
-
-  function deductRewards (address account) external {
-    _deductRewards(account);
+  function clearRewards (address account) external {
+    _clearRewards(account);
   }
 }

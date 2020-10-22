@@ -9,41 +9,38 @@ abstract contract StakingPool is ERC20 {
 
   // values scaled by REWARD_SCALAR
   uint private _cumulativeRewardPerToken;
-  mapping (address => uint) private _rewardsDeducted;
+  mapping (address => uint) private _rewardsExcluded;
   mapping (address => uint) private _rewardsReserved;
 
   /**
-   * @notice get undistributed rewards for account
-   * @param account benificiary of rewards
-   * @return uint reward amount
+   * @notice get rewards of given account available for withdrawal
+   * @param account owner of rewards
+   * @return uint quantity of rewards available
    */
   function rewardsOf (address account) public view returns (uint) {
-    return _scaledRewardsOf(account) / REWARD_SCALAR;
+    return (
+      balanceOf(account) * _cumulativeRewardPerToken
+      + _rewardsReserved[account]
+      - _rewardsExcluded[account]
+    ) / REWARD_SCALAR;
   }
 
   /**
-   * @notice get undistributed rewards for account, scaled by REWARD_SCALAR
-   * @param account benificiary of rewards
-   * @return uint scaled reward amount
+   * @notice distribute rewards proportionally to stake holders
+   * @param amount quantity of rewards to distribute
    */
-  function _scaledRewardsOf (address account) internal view returns (uint) {
-    return balanceOf(account) * _cumulativeRewardPerToken - _rewardsDeducted[account];
-  }
-
-  /**
-   * @notice distribute rewards to stakers
-   * @param amount quantity to distribute
-   */
-  function _accrueRewards (uint amount) internal {
+  function _distributeRewards (uint amount) internal {
+    // TODO: zero totalSupply
     _cumulativeRewardPerToken += amount * REWARD_SCALAR / totalSupply();
   }
 
   /**
-   * @notice mark account as having been paid all rewards owed
-   * @param account address to update
+   * @notice remove pending rewards associated with account
+   * @param account owner of rewards
    */
-  function _deductRewards (address account) internal {
-    _rewardsDeducted[account] += _scaledRewardsOf(account);
+  function _clearRewards (address account) internal {
+    _rewardsExcluded[account] = balanceOf(account) * _cumulativeRewardPerToken;
+    delete _rewardsReserved[account];
   }
 
   /**
@@ -58,12 +55,13 @@ abstract contract StakingPool is ERC20 {
     uint delta = amount * _cumulativeRewardPerToken;
 
     if (from != address(0)) {
-      _rewardsDeducted[from] -= delta;
-      _rewardsReserved[from] += delta;
+      uint excluded = balanceOf(from) * _cumulativeRewardPerToken;
+      _rewardsReserved[from] += excluded - _rewardsExcluded[from];
+      _rewardsExcluded[from] = excluded - delta;
     }
 
     if (to != address(0)) {
-      _rewardsDeducted[to] += delta;
+      _rewardsExcluded[to] += delta;
     }
   }
 }

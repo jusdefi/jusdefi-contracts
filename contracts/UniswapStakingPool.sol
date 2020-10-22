@@ -34,7 +34,6 @@ contract UniswapStakingPool is StakingPool {
    */
   function compound (uint amountETHMin) external payable {
     uint rewards = rewardsOf(msg.sender);
-    _deductRewards(msg.sender);
 
     (
       ,
@@ -54,6 +53,7 @@ contract UniswapStakingPool is StakingPool {
     // return remaining ETH to sender
     msg.sender.sendValue(msg.value - amountETH);
 
+    _clearRewards(msg.sender);
     _mint(msg.sender, liquidity);
   }
 
@@ -95,7 +95,6 @@ contract UniswapStakingPool is StakingPool {
       block.timestamp
     );
 
-
     // return remaining JDFI and ETH to sender
     IERC20(_jusdefi).transfer(msg.sender, amountJDFIDesired - amountJDFI);
     msg.sender.sendValue(msg.value - amountETH);
@@ -128,17 +127,17 @@ contract UniswapStakingPool is StakingPool {
       block.timestamp
     );
 
-    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amountJDFI + rewardsOf(msg.sender));
-    _deductRewards(msg.sender);
+    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amountJDFI);
     msg.sender.sendValue(amountETH);
   }
 
   /**
    * @notice distribute rewards to stakers
+   * @dev must be called by JusDeFi contract in conjunction with JDFI transfer
    * @param amount quantity to distribute
    */
-  function accrueRewards (uint amount) external {
+  function distributeRewards (uint amount) external {
     require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
-    _accrueRewards(amount);
+    _distributeRewards(amount);
   }
 }

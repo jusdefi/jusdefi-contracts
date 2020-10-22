@@ -30,7 +30,7 @@ contract JDFIStakingPool is StakingPool {
    */
   function compound () external {
     uint amount = rewardsOf(msg.sender);
-    _deductRewards(msg.sender);
+    _clearRewards(msg.sender);
     _mint(msg.sender, amount);
   }
 
@@ -49,8 +49,7 @@ contract JDFIStakingPool is StakingPool {
    */
   function unstake (uint amount) external {
     _burn(msg.sender, amount);
-    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amount + rewardsOf(msg.sender));
-    _deductRewards(msg.sender);
+    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amount);
   }
 
   /**
@@ -64,20 +63,21 @@ contract JDFIStakingPool is StakingPool {
 
   /**
    * @notice distribute rewards to stakers
+   * @dev must be called by JusDeFi contract in conjunction with JDFI transfer
    * @param amount quantity to distribute
    */
-  function accrueRewards (uint amount) external {
+  function distributeRewards (uint amount) external {
     require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
-    _accrueRewards(amount);
+    _distributeRewards(amount);
   }
 
   /**
-   * @notice airdrop frozen tokens to given accounts in given quantities
+   * @notice airdrop locked tokens to given accounts in given quantities
    * @dev _mint and _burn are used in place of _transfer due to gas considerations
    * @param accounts airdrop recipients
    * @param amounts airdrop quantities
    */
-  function airdropFrozen (address[] calldata accounts, uint[] calldata amounts) external {
+  function airdropLocked (address[] calldata accounts, uint[] calldata amounts) external {
     require(accounts.length == amounts.length, 'JusDeFi: array lengths do not match');
 
     uint length = accounts.length;

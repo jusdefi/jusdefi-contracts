@@ -94,8 +94,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
     require(block.timestamp - _lastRebaseAt > 3 days);
     _lastRebaseAt = block.timestamp;
 
-    // _jdfiStakingPool.accrueRewards(asdf);
-    // _uniswapStakingPool.accrueRewards(ghjk - asdf);
+    // _jdfiStakingPool.distributeRewards(asdf);
+    // _uniswapStakingPool.distributeRewards(ghjk - asdf);
 
     // TODO: set burn rate
   }
