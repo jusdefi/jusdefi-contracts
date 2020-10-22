@@ -27,8 +27,16 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint private _lastRebaseAt;
 
   // burn rate specified in basis points
-  uint private _burnRate;
+  uint private _burnRate; // initialized at 0; not set until #liquidityEventClose
+  uint private constant BURN_RATE_BASE = 1500;
   uint private constant BP_DIVISOR = 10000;
+
+  uint private constant RESERVE_TEAM = 2000 ether;
+  uint private constant RESERVE_JUSTICE = 10000 ether;
+  uint private constant RESERVE_LIQUIDITY_EVENT = 10000 ether;
+  uint private constant REWARDS_SEED = 2000 ether;
+
+  uint private constant JDFI_PER_ETH = 4;
 
   constructor (
     address payable uniswapRouter
@@ -37,8 +45,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   {
     _uniswapRouter = uniswapRouter;
 
-    // liquidity event distribution + justice reserve + team reserve
-    uint initialStake = 10000 ether + 10000 ether + 2000 ether;
+    uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
 
     _jdfiStakingPool = new JDFIStakingPool(initialStake);
 
@@ -55,7 +62,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _mint(address(_jdfiStakingPool), initialStake);
 
     // transfer team reserve and justice reserve to sender for distribution
-    _jdfiStakingPool.transfer(msg.sender, initialStake - 10000 ether);
+    _jdfiStakingPool.transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
     _liquidityEventClosedAt = block.timestamp + 3 days;
     _liquidityEventOpen = true;
@@ -109,8 +116,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     require(block.timestamp - _lastRebaseAt > 3 days);
     _lastRebaseAt = block.timestamp;
 
-    // _jdfiStakingPool.distributeRewards(asdf);
-    // _uniswapStakingPool.distributeRewards(ghjk - asdf);
+    // TODO: distribute held JDFI to pools
 
     // TODO: set burn rate
   }
@@ -121,7 +127,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   function liquidityEventDeposit () external payable {
     require(_liquidityEventOpen, 'JusDeFi: liquidity event has closed');
 
-    try _jdfiStakingPool.transfer(msg.sender, msg.value * 4) returns (bool) {} catch {
+    try _jdfiStakingPool.transfer(msg.sender, msg.value * JDFI_PER_ETH) returns (bool) {} catch {
       revert('JusDeFi: deposit amount surpasses available supply');
     }
   }
@@ -135,8 +141,9 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _liquidityEventOpen = false;
 
     uint remaining = _jdfiStakingPool.balanceOf(address(this));
-    uint distributed = 10000 ether - remaining;
+    uint distributed = RESERVE_LIQUIDITY_EVENT - remaining;
 
+    // require minimum deposit to avoid nonspecific Uniswap error: ds-math-sub-underflow
     require(distributed >= 1 ether, 'JusDeFi: insufficient liquidity added');
 
     // burn rate initialized at zero, so unstaked amount is 1:1
@@ -145,15 +152,18 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     address pair = _uniswapPair;
     address weth = IUniswapV2Router02(_uniswapRouter).WETH();
-    IWETH(weth).deposit{ value: distributed / 4 }();
-    IWETH(weth).transfer(pair, distributed / 4);
+    IWETH(weth).deposit{ value: distributed / JDFI_PER_ETH }();
+    IWETH(weth).transfer(pair, distributed / JDFI_PER_ETH);
     _mint(pair, distributed);
 
     // JDFI transfers are reverted up to this point; Uniswap pool is guaranteed to have no liquidity
     _initialLiquidity = IUniswapV2Pair(pair).mint(address(this));
 
+    // seed staking pool
+    _mint(address(this), REWARDS_SEED);
+
     // set initial burn rate
-    _burnRate = 1500;
+    _burnRate = BURN_RATE_BASE;
   }
 
   /**

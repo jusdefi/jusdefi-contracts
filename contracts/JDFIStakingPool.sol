@@ -10,6 +10,8 @@ contract JDFIStakingPool is StakingPool {
 
   mapping (address => uint) private _lockedBalances;
 
+  uint private constant JDFI_PER_ETH = 4;
+
   constructor (uint initialSupply) ERC20('Staked JDFI', 'JDFI/S') {
     _jusdefi = msg.sender;
     // initialSupply is minted before receipt of JDFI; see JusDeFi constructor
@@ -64,7 +66,7 @@ contract JDFIStakingPool is StakingPool {
    * @notice deposit ETH to free locked token balance, at a rate of 1:4
    */
   function unlock () external payable {
-    uint amount = msg.value * 4;
+    uint amount = msg.value * JDFI_PER_ETH;
     require(_lockedBalances[msg.sender] >= amount, 'JusDeFi: insufficient locked balance');
     _lockedBalances[msg.sender] -= amount;
   }
