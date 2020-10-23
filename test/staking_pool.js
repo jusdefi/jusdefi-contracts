@@ -4,7 +4,7 @@ const {
 
 const StakingPool = artifacts.require('StakingPoolMock');
 
-contract('JDFIStakingPool', function (accounts) {
+contract('StakingPool', function (accounts) {
   let instance;
 
   beforeEach(async function () {
