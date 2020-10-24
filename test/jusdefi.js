@@ -9,13 +9,15 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
-const JusDeFi = artifacts.require('JusDeFi');
+const JusDeFi = artifacts.require('JusDeFiMock');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
 const UniswapStakingPool = artifacts.require('UniswapStakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 
 contract('JusDeFi', function (accounts) {
   const [NOBODY, DEPLOYER, DEPOSITOR] = accounts;
+
+  const BP_DIVISOR = new BN(10000);
 
   let instance;
   let jdfiStakingPool;
@@ -88,6 +90,21 @@ contract('JusDeFi', function (accounts) {
           'JusDeFi: liquidity event still in progress'
         );
       });
+    });
+  });
+
+  describe('#burnAndTransfer', function () {
+    it('burns according to current burn rate before transfer', async function () {
+      await time.increaseTo(await instance._liquidityEventClosedAt.call());
+      await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
+      await instance.liquidityEventClose();
+
+      let amount = new BN(web3.utils.toWei('1'));
+      await instance.mint(NOBODY, amount);
+
+      await instance.burnAndTransfer(NOBODY, amount, { from: NOBODY });
+
+      assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(1500)).div(BP_DIVISOR))));
     });
   });
 
