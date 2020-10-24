@@ -26,6 +26,12 @@ contract UniswapStakingPool is StakingPool {
     _jusdefi = msg.sender;
     _uniswapPair = uniswapPair;
     _uniswapRouter = uniswapRouter;
+
+    IERC20(uniswapPair).approve(uniswapRouter, type(uint).max);
+  }
+
+  receive () external payable {
+    require(msg.sender == _uniswapRouter, 'JusDeFi: sender must be Uniswap Router');
   }
 
   /**
@@ -80,6 +86,10 @@ contract UniswapStakingPool is StakingPool {
   ) external payable {
     IERC20(_jusdefi).transferFrom(msg.sender, address(this), amountJDFIDesired);
 
+    // prevent possible theft of rounding error
+    require(amountJDFIDesired >= amountJDFIMin, 'JusDeFi: minimum JDFI must not exceed desired JDFI');
+    require(msg.value >= amountETHMin, 'JusDeFi: minimum ETH must not exceed message value');
+
     (
       uint amountJDFI,
       uint amountETH,
@@ -129,6 +139,14 @@ contract UniswapStakingPool is StakingPool {
 
     IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amountJDFI);
     msg.sender.sendValue(amountETH);
+  }
+
+  /**
+   * @notice withdraw earned JDFI rewards
+   */
+  function withdraw () external {
+    IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, rewardsOf(msg.sender));
+    _clearRewards(msg.sender);
   }
 
   /**

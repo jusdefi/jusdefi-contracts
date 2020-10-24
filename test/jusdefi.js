@@ -45,6 +45,12 @@ contract('JusDeFi', function (accounts) {
       let balance = await jdfiStakingPool.balanceOf.call(instance.address);
       assert(balance.eq(new BN(web3.utils.toWei('10000'))));
     });
+
+    it('approves Uniswap Router to spend JDFI held by UniswapStakingPool', async function () {
+      assert((
+        await instance.allowance.call(uniswapStakingPool.address, uniswapRouter)
+      ).eq(constants.MAX_UINT256));
+    });
   });
 
   describe('#name', function () {

@@ -58,6 +58,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     _uniswapStakingPool = new UniswapStakingPool(_uniswapPair, uniswapRouter);
 
+    _approve(address(_uniswapStakingPool), uniswapRouter, type(uint).max);
+
     // mint JDFI for staking pool after-the-fact to match minted JDFI/S
     _mint(address(_jdfiStakingPool), initialStake);
 
@@ -75,7 +77,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   * @param amount quantity transferred
    */
   function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
-    if (msg.sender == address(_jdfiStakingPool)) {
+    if (msg.sender == address(_jdfiStakingPool) || msg.sender == address(_uniswapStakingPool)) {
       _transfer(from, to, amount);
       return true;
     } else {
