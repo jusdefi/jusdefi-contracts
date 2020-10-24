@@ -46,6 +46,10 @@ contract('JusDeFi', function (accounts) {
       assert(balance.eq(new BN(web3.utils.toWei('10000'))));
     });
 
+    it('mints staking pool seed', async function () {
+      assert((await instance.balanceOf.call(instance.address)).eq(new BN(web3.utils.toWei('2000'))));
+    });
+
     it('approves Uniswap Router to spend JDFI held by UniswapStakingPool', async function () {
       assert((
         await instance.allowance.call(uniswapStakingPool.address, uniswapRouter)
@@ -88,7 +92,7 @@ contract('JusDeFi', function (accounts) {
   });
 
   describe('#liquidityEventDeposit', function () {
-    it('transfers JDFI/S to depositor in exchange for ether at a ratio of 4:1', async function () {
+    it('transfers JDFI/S to depositor in exchange for ETH at a ratio of 4:1', async function () {
       let value = new BN(1);
 
       let initialBalance = await jdfiStakingPool.balanceOf.call(DEPOSITOR);
@@ -145,7 +149,22 @@ contract('JusDeFi', function (accounts) {
       let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
       let { reserve0, reserve1 } = await pair.getReserves();
 
-      assert(reserve0.mul(new BN(4)).eq(reserve1));
+      let reserveJDFI, reserveETH;
+
+      if (reserve0.gt(reserve1)) {
+        reserveJDFI = reserve0;
+        reserveETH = reserve1;
+      } else {
+        reserveJDFI = reserve1;
+        reserveETH = reserve0;
+      }
+
+      assert(reserveETH.mul(new BN(4)).eq(reserveJDFI));
+
+      let uniBalance = await pair.balanceOf.call(instance.address);
+      let uniTotalSupply = await pair.totalSupply.call();
+
+      assert(uniBalance.add(await pair.MINIMUM_LIQUIDITY.call()).eq(uniTotalSupply));
     });
 
     it('burns undistributed JDFI', async function () {
@@ -157,7 +176,7 @@ contract('JusDeFi', function (accounts) {
       await instance.liquidityEventClose();
       let finalSupply = await instance.totalSupply.call();
 
-      // undistributed JDFI as well as liquidity reserve are burned
+      // account for amount not burned, as well as amount minted to match
       let burned = new BN(web3.utils.toWei('10000')).sub(value.mul(new BN(8)));
       assert(initialSupply.sub(burned).eq(finalSupply));
     });

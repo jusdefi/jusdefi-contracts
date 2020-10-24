@@ -60,8 +60,11 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     _approve(address(_uniswapStakingPool), uniswapRouter, type(uint).max);
 
-    // mint JDFI for staking pool after-the-fact to match minted JDFI/S
+    // mint staked JDFI after-the-fact to match minted JDFI/S
     _mint(address(_jdfiStakingPool), initialStake);
+
+    // seed staking pools
+    _mint(address(this), REWARDS_SEED);
 
     // transfer team reserve and justice reserve to sender for distribution
     _jdfiStakingPool.transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
@@ -160,9 +163,6 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     // JDFI transfers are reverted up to this point; Uniswap pool is guaranteed to have no liquidity
     _initialLiquidity = IUniswapV2Pair(pair).mint(address(this));
-
-    // seed staking pool
-    _mint(address(this), REWARDS_SEED);
 
     // set initial burn rate
     _burnRate = BURN_RATE_BASE;
