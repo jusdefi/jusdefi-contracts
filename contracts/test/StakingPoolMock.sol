@@ -2,7 +2,7 @@
 
 pragma solidity ^0.7.0;
 
-import './StakingPool.sol';
+import '../StakingPool.sol';
 
 contract StakingPoolMock is StakingPool {
   constructor () ERC20('', '') {}

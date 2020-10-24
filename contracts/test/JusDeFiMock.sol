@@ -2,7 +2,7 @@
 
 pragma solidity ^0.7.0;
 
-import './JusDeFi.sol';
+import '../JusDeFi.sol';
 
 contract JusDeFiMock is JusDeFi {
   constructor (address payable uniswapRouter) JusDeFi(uniswapRouter) {}

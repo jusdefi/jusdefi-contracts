@@ -2,7 +2,7 @@
 
 pragma solidity ^0.7.0;
 
-import './IJusDeFi.sol';
+import './interfaces/IJusDeFi.sol';
 import './StakingPool.sol';
 
 contract JDFIStakingPool is StakingPool {

@@ -7,7 +7,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IWETH.sol';
 
-import './IJusDeFi.sol';
+import './interfaces/IJusDeFi.sol';
 import './JDFIStakingPool.sol';
 import './UniswapStakingPool.sol';
 
