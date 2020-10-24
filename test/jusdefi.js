@@ -181,6 +181,16 @@ contract('JusDeFi', function (accounts) {
       assert(initialSupply.sub(burned).eq(finalSupply));
     });
 
+    it('sets initial burn rate to 15%', async function () {
+      let value = new BN(web3.utils.toWei('1'));
+      await time.increaseTo(await instance._liquidityEventClosedAt.call());
+      await instance.liquidityEventDeposit({ from: DEPOSITOR, value });
+
+      assert((await instance._burnRate.call()).eq(new BN(0)));
+      await instance.liquidityEventClose();
+      assert((await instance._burnRate.call()).eq(new BN(1500)));
+    });
+
     describe('reverts if', function () {
       it('liquidity event is still in progress', async function () {
         await expectRevert(

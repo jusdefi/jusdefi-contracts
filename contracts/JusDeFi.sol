@@ -27,7 +27,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint private _lastRebaseAt;
 
   // burn rate specified in basis points
-  uint private _burnRate; // initialized at 0; not set until #liquidityEventClose
+  uint public _burnRate; // initialized at 0; not set until #liquidityEventClose
   uint private constant BURN_RATE_BASE = 1500;
   uint private constant BP_DIVISOR = 10000;
 
