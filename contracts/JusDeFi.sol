@@ -28,7 +28,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
   // fee specified in basis points
   uint public _fee; // initialized at 0; not set until #liquidityEventClose
-  uint private constant FEE_BASE = 750;
+  uint private constant FEE_BASE = 1000;
   uint private constant BP_DIVISOR = 10000;
 
   uint private constant RESERVE_TEAM = 2000 ether;
@@ -177,5 +177,13 @@ contract JusDeFi is IJusDeFi, ERC20 {
   function _beforeTokenTransfer (address from, address to, uint amount) override internal {
     require(!_liquidityEventOpen, 'JusDeFi: liquidity event still in progress');
     super._beforeTokenTransfer(from, to, amount);
+  }
+
+  /**
+   * @notice calculate fee offset based on net votes
+   * @return uint fee offset from FEE_BASE
+   */
+  function _sigmoid (uint net) private pure returns (uint) {
+    return FEE_BASE * net / (3 ether + net);
   }
 }

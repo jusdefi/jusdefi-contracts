@@ -198,14 +198,14 @@ contract('JusDeFi', function (accounts) {
       assert(initialSupply.sub(burned).eq(finalSupply));
     });
 
-    it('sets initial fee to 7.5%', async function () {
+    it('sets initial fee to 10%', async function () {
       let value = new BN(web3.utils.toWei('1'));
       await time.increaseTo(await instance._liquidityEventClosedAt.call());
       await instance.liquidityEventDeposit({ from: DEPOSITOR, value });
 
       assert((await instance._fee.call()).eq(new BN(0)));
       await instance.liquidityEventClose();
-      assert((await instance._fee.call()).eq(new BN(750)));
+      assert((await instance._fee.call()).eq(new BN(1000)));
     });
 
     describe('reverts if', function () {
