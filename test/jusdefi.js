@@ -104,7 +104,8 @@ contract('JusDeFi', function (accounts) {
 
       await instance.burnAndTransfer(NOBODY, amount, { from: NOBODY });
 
-      assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(750)).div(BP_DIVISOR))));
+      let fee = await instance._fee.call();
+      assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(fee)).div(BP_DIVISOR))));
     });
   });
 
