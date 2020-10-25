@@ -402,8 +402,7 @@ contract('UniswapStakingPool', function (accounts) {
       assert(finalBalanceJDFIWETHUNIV2S.isZero());
       assert(initialBalanceETH.add(valueETH).sub(gasUsed).eq(finalBalanceETH));
 
-      // TODO: dynamic fee
-      let fee = new BN(750);
+      let fee = await jusdefi._fee.call();
       let burned = valueJDFI.mul(fee).div(BP_DIVISOR);
       assert(initialBalanceJDFI.add(valueJDFI).sub(burned).eq(finalBalanceJDFI));
     });
@@ -468,8 +467,7 @@ contract('UniswapStakingPool', function (accounts) {
       await instance.methods['stake(uint256)'](amount, { from: account });
 
       await jusdefi.distributeUniswapStakingPoolRewards(amount);
-      // TODO: dynamic fee
-      let fee = new BN(750);
+      let fee = await jusdefi._fee.call();
 
       let rewards = await instance.rewardsOf.call(account);
       assert(!rewards.isZero());

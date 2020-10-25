@@ -148,8 +148,7 @@ contract('JDFIStakingPool', function (accounts) {
       await jusdefi.mint(account, amount);
       await instance.stake(amount, { from: account });
 
-      // TODO: dynamic fee
-      let fee = new BN(750);
+      let fee = await jusdefi._fee.call();
 
       let initialBalance = await jusdefi.balanceOf.call(account);
       await instance.unstake(amount, { from: account });
@@ -168,8 +167,7 @@ contract('JDFIStakingPool', function (accounts) {
       await instance.stake(amount, { from: account });
 
       await jusdefi.distributeJDFIStakingPoolRewards(amount);
-      // TODO: dynamic fee
-      let fee = new BN(750);
+      let fee = await jusdefi._fee.call();
 
       let rewards = await instance.rewardsOf.call(account);
       assert(!rewards.isZero());
