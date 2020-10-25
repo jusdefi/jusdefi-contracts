@@ -13,6 +13,7 @@ const JusDeFi = artifacts.require('JusDeFiMock');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
 const UniswapStakingPool = artifacts.require('UniswapStakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
+const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 
 contract('JusDeFi', function (accounts) {
   const [NOBODY, DEPLOYER, DEPOSITOR] = accounts;
@@ -22,6 +23,12 @@ contract('JusDeFi', function (accounts) {
   let instance;
   let jdfiStakingPool;
   let uniswapStakingPool;
+
+  let closeLiquidityEvent = async function () {
+    await time.increaseTo(await instance._liquidityEventClosedAt.call());
+    await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
+    await instance.liquidityEventClose();
+  };
 
   beforeEach(async function () {
     instance = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
@@ -51,12 +58,6 @@ contract('JusDeFi', function (accounts) {
     it('mints staking pool seed', async function () {
       assert((await instance.balanceOf.call(instance.address)).eq(new BN(web3.utils.toWei('2000'))));
     });
-
-    it('approves Uniswap Router to spend JDFI held by UniswapStakingPool', async function () {
-      assert((
-        await instance.allowance.call(uniswapStakingPool.address, uniswapRouter)
-      ).eq(constants.MAX_UINT256));
-    });
   });
 
   describe('#name', function () {
@@ -83,6 +84,28 @@ contract('JusDeFi', function (accounts) {
   });
 
   describe('#transferFrom', function () {
+    it('does not require approval for Uniswap Router', async function () {
+      await closeLiquidityEvent();
+
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+
+      let value = new BN(web3.utils.toWei('1'));
+      await instance.mint(NOBODY, value.mul(new BN(4)));
+
+      assert((await instance.allowance.call(NOBODY, uniswapRouter)).isZero());
+
+      // no revert
+      await router.addLiquidityETH(
+        instance.address,
+        value.mul(new BN(4)),
+        value.mul(new BN(4)),
+        value,
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+    });
+
     describe('reverts if', function () {
       it('liquidity event is still in progress', async function () {
         await expectRevert(
@@ -95,9 +118,7 @@ contract('JusDeFi', function (accounts) {
 
   describe('#burnAndTransfer', function () {
     it('applies current fee before transfer', async function () {
-      await time.increaseTo(await instance._liquidityEventClosedAt.call());
-      await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
-      await instance.liquidityEventClose();
+      await closeLiquidityEvent();
 
       let amount = new BN(web3.utils.toWei('1'));
       await instance.mint(NOBODY, amount);
@@ -128,10 +149,7 @@ contract('JusDeFi', function (accounts) {
 
     describe('reverts if', function () {
       it('liquidity event has been closed', async function () {
-        await time.increaseTo(await instance._liquidityEventClosedAt.call());
-
-        await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
-        await instance.liquidityEventClose();
+        await closeLiquidityEvent();
 
         await expectRevert(
           instance.liquidityEventDeposit({ from: DEPOSITOR }),
@@ -160,9 +178,7 @@ contract('JusDeFi', function (accounts) {
 
   describe('#liquidityEventClose', function () {
     it('adds JDFI and deposited ETH to Uniswap at a ratio of 4:1', async function () {
-      await time.increaseTo(await instance._liquidityEventClosedAt.call());
-      await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
-      await instance.liquidityEventClose();
+      await closeLiquidityEvent();
 
       let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
       let { reserve0, reserve1 } = await pair.getReserves();
@@ -228,9 +244,7 @@ contract('JusDeFi', function (accounts) {
       });
 
       it('liquidity event has already been closed', async function () {
-        await time.increaseTo(await instance._liquidityEventClosedAt.call());
-        await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
-        await instance.liquidityEventClose();
+        await closeLiquidityEvent();
 
         await expectRevert(
           instance.liquidityEventClose(),

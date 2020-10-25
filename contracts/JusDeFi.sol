@@ -26,6 +26,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint private _lastBuybackAt;
   uint private _lastRebaseAt;
 
+  mapping (address => bool) private _transferWhitelist;
+
   // fee specified in basis points
   uint public _fee; // initialized at 0; not set until #liquidityEventClose
   uint private constant FEE_BASE = 1000;
@@ -58,8 +60,6 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     _uniswapStakingPool = new UniswapStakingPool(_uniswapPair, uniswapRouter);
 
-    _approve(address(_uniswapStakingPool), uniswapRouter, type(uint).max);
-
     // mint staked JDFI after-the-fact to match minted JDFI/S
     _mint(address(_jdfiStakingPool), initialStake);
 
@@ -71,6 +71,11 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     _liquidityEventClosedAt = block.timestamp + 3 days;
     _liquidityEventOpen = true;
+
+    // enable trusted addresses to transfer tokens without approval
+    _transferWhitelist[address(_jdfiStakingPool)] = true;
+    _transferWhitelist[address(_uniswapStakingPool)] = true;
+    _transferWhitelist[uniswapRouter] = true;
   }
 
   /**
@@ -80,7 +85,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   * @param amount quantity transferred
    */
   function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
-    if (msg.sender == address(_jdfiStakingPool) || msg.sender == address(_uniswapStakingPool)) {
+    if (_transferWhitelist[msg.sender]) {
       _transfer(from, to, amount);
       return true;
     } else {
