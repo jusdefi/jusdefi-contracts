@@ -1,6 +1,7 @@
 const {
   BN,
   constants,
+  send,
   time,
   expectRevert,
 } = require('@openzeppelin/test-helpers');
@@ -57,6 +58,22 @@ contract('JusDeFi', function (accounts) {
 
     it('mints staking pool seed', async function () {
       assert((await instance.balanceOf.call(instance.address)).eq(new BN(web3.utils.toWei('2000'))));
+    });
+
+    it('approves Uniswap Router to spend UNI-V2', async function () {
+      let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
+      assert((await pair.allowance.call(instance.address, uniswapRouter)).eq(constants.MAX_UINT256));
+    });
+  });
+
+  describe('receive', function () {
+    describe('reverts if', function () {
+      it('sender is not Uniswap Router', async function () {
+        await expectRevert(
+          send.ether(NOBODY, instance.address, new BN(1)),
+          'JusDeFi: sender must be Uniswap Router'
+        );
+      });
     });
   });
 
@@ -127,6 +144,169 @@ contract('JusDeFi', function (accounts) {
 
       let fee = await instance._fee.call();
       assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(fee)).div(BP_DIVISOR))));
+    });
+  });
+
+  describe('#vote', function () {
+    it('records vote for fee increase or decrease weighted by message value', async function () {
+      let value = new BN(web3.utils.toWei('1'));
+
+      assert((await instance._votesIncrease.call()).isZero());
+      await instance.vote(true, { from: NOBODY, value });
+      assert((await instance._votesIncrease.call()).eq(value));
+
+      assert((await instance._votesDecrease.call()).isZero());
+      await instance.vote(false, { from: NOBODY, value });
+      assert((await instance._votesDecrease.call()).eq(value));
+    });
+  });
+
+  describe('#buyback', function () {
+    it('divests of Uniswap liquidity if total supply exceeds initial supply', async function () {
+      await closeLiquidityEvent();
+
+      while (new Date(await time.latest() * 1000).getDay() !== 5) {
+        await time.increase(60 * 60 * 24);
+      }
+
+      let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+
+      let value = (await instance.balanceOf.call(pair.address)).div(new BN(4)).mul(new BN(2)).div(new BN(3));
+      await instance.mint(NOBODY, value.mul(new BN(8)));
+
+      await router.addLiquidityETH(
+        instance.address,
+        value.mul(new BN(4)),
+        value.mul(new BN(4)),
+        value,
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      let excess = await pair.balanceOf.call(NOBODY);
+
+      let initialBalance = await pair.balanceOf.call(instance.address);
+      await instance.buyback();
+      let finalBalance = await pair.balanceOf.call(instance.address);
+
+      assert(initialBalance.sub(excess).eq(finalBalance));
+
+      await time.increase(60 * 60 * 24 * 7);
+
+      await router.addLiquidityETH(
+        instance.address,
+        value.mul(new BN(4)),
+        value.mul(new BN(4)),
+        value,
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      await instance.buyback();
+
+      assert((await pair.balanceOf.call(instance.address)).isZero());
+    });
+
+    it('purchases and burns JDFI from Uniswap using total balance');
+
+    describe('reverts if', function () {
+      it('liquidity event is still in progress', async function () {
+        await expectRevert(
+          instance.buyback(),
+          'JusDeFi: liquidity event still in progress'
+        );
+      });
+
+      it('date is not Friday (UTC)', async function () {
+        await closeLiquidityEvent();
+
+        if (new Date(await time.latest() * 1000).getDay() === 5) {
+          await time.increase(60 * 60 * 24);
+        }
+
+        await expectRevert(
+          instance.buyback(),
+          'JusDeFi: buyback must take place on Friday (UTC)'
+        );
+      });
+
+      it('last call was made within current day', async function () {
+        await closeLiquidityEvent();
+
+        while (new Date(await time.latest() * 1000).getDay() !== 5) {
+          await time.increase(60 * 60 * 24);
+        }
+
+        await instance.buyback();
+
+        expectRevert(
+          instance.buyback(),
+          'JusDeFi: rebase already called this week'
+        );
+      });
+    });
+  });
+
+  describe('#rebase', function () {
+    it('distributes accrued JDFI to staking pools');
+
+    it('sets weekly fee based on community vote');
+
+    it('resets votes', async function () {
+      await closeLiquidityEvent();
+
+      while (new Date(await time.latest() * 1000).getDay() !== 0) {
+        await time.increase(60 * 60 * 24);
+      }
+
+      let value = new BN(web3.utils.toWei('1'));
+      await instance.vote(true, { from: NOBODY, value });
+      await instance.vote(false, { from: NOBODY, value });
+
+      await instance.rebase();
+
+      assert((await instance._votesIncrease.call()).isZero());
+      assert((await instance._votesDecrease.call()).isZero());
+    });
+
+    describe('reverts if', function () {
+      it('liquidity event is still in progress', async function () {
+        await expectRevert(
+          instance.rebase(),
+          'JusDeFi: liquidity event still in progress'
+        );
+      });
+
+      it('date is not Sunday (UTC)', async function () {
+        await closeLiquidityEvent();
+
+        if (new Date(await time.latest() * 1000).getDay() === 0) {
+          await time.increase(60 * 60 * 24);
+        }
+
+        await expectRevert(
+          instance.rebase(),
+          'JusDeFi: rebase must take place on Sunday (UTC)'
+        );
+      });
+
+      it('last call was made within current day', async function () {
+        await closeLiquidityEvent();
+
+        while (new Date(await time.latest() * 1000).getDay() !== 0) {
+          await time.increase(60 * 60 * 24);
+        }
+
+        await instance.rebase();
+
+        expectRevert(
+          instance.rebase(),
+          'JusDeFi: rebase already called this week'
+        );
+      });
     });
   });
 

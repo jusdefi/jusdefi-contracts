@@ -2,6 +2,7 @@
 
 pragma solidity ^0.7.0;
 
+import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
@@ -21,7 +22,10 @@ contract JusDeFi is IJusDeFi, ERC20 {
   bool public _liquidityEventOpen;
   uint public _liquidityEventClosedAt;
 
-  uint private _initialLiquidity;
+  uint private _initialUniTotalSupply;
+
+  uint public _votesIncrease;
+  uint public _votesDecrease;
 
   uint private _lastBuybackAt;
   uint private _lastRebaseAt;
@@ -69,6 +73,9 @@ contract JusDeFi is IJusDeFi, ERC20 {
     // transfer team reserve and justice reserve to sender for distribution
     _jdfiStakingPool.transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
+    // approve router to handle UNI-V2 for buybacks
+    IUniswapV2Pair(_uniswapPair).approve(uniswapRouter, type(uint).max);
+
     _liquidityEventClosedAt = block.timestamp + 3 days;
     _liquidityEventOpen = true;
 
@@ -76,6 +83,10 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _transferWhitelist[address(_jdfiStakingPool)] = true;
     _transferWhitelist[address(_uniswapStakingPool)] = true;
     _transferWhitelist[uniswapRouter] = true;
+  }
+
+  receive () external payable {
+    require(msg.sender == _uniswapRouter, 'JusDeFi: sender must be Uniswap Router');
   }
 
   /**
@@ -106,29 +117,122 @@ contract JusDeFi is IJusDeFi, ERC20 {
   }
 
   /**
+   * @notice vote for weekly fee changes by sending ETH
+   * @param increase whether vote is to increase or decrease the fee
+   */
+  function vote (bool increase) external payable {
+    if (increase) {
+      _votesIncrease += msg.value;
+    } else {
+      _votesDecrease += msg.value;
+    }
+  }
+
+  /**
    * @notice withdraw Uniswap liquidity in excess of initial amount, purchase and burn JDFI
    */
   function buyback () external {
-    // TODO: require Friday
-    require(block.timestamp - _lastBuybackAt > 3 days);
+    require(!_liquidityEventOpen, 'JusDeFi: liquidity event still in progress');
+    require(block.timestamp / (1 days) % 7 == 1, 'JusDeFi: buyback must take place on Friday (UTC)');
+    require(block.timestamp - _lastBuybackAt > 1 days, 'JusDeFi: buyback already called this week');
     _lastBuybackAt = block.timestamp;
 
-    // TODO: frontrunning?
+    uint initialBalance = balanceOf(address(this));
 
-    // TODO: buyback
+    // remove liquidity in excess of original amount
+
+    uint initialUniTotalSupply = _initialUniTotalSupply;
+    uint uniTotalSupply = IUniswapV2Pair(_uniswapPair).totalSupply();
+
+    if (uniTotalSupply > initialUniTotalSupply) {
+      uint delta = Math.min(
+        IUniswapV2Pair(_uniswapPair).balanceOf(address(this)),
+        uniTotalSupply - initialUniTotalSupply
+      );
+
+      if (delta > 0) {
+        // TODO: minimum output values
+
+        IUniswapV2Router02(_uniswapRouter).removeLiquidityETH(
+          address(this),
+          delta,
+          0,
+          0,
+          address(this),
+          block.timestamp
+        );
+      }
+    }
+
+    address[] memory path = new address[](2);
+    path[0] = IUniswapV2Router02(_uniswapRouter).WETH();
+    path[1] = address(this);
+
+    // buyback JDFI using ETH from withdrawn liquidity and fee votes
+    // TODO: minimum output value
+
+    if (address(this).balance > 0) {
+      IUniswapV2Router02(_uniswapRouter).swapExactETHForTokens{
+        value: address(this).balance
+      }(
+        0,
+        path,
+        address(this), // TODO: Uniswap disallows transfering to token address
+        block.timestamp
+      );
+    }
+
+    _burn(address(this), balanceOf(address(this)) - initialBalance);
   }
 
   /**
    * @notice distribute collected fees to staking pools
    */
   function rebase () external {
-    // TODO: require Sunday
-    require(block.timestamp - _lastRebaseAt > 3 days);
+    require(!_liquidityEventOpen, 'JusDeFi: liquidity event still in progress');
+    require(block.timestamp / (1 days) % 7 == 3, 'JusDeFi: rebase must take place on Sunday (UTC)');
+    require(block.timestamp - _lastRebaseAt > 1 days, 'JusDeFi: rebase already called this week');
     _lastRebaseAt = block.timestamp;
 
-    // TODO: distribute held JDFI to pools
+    // skim to prevent manipulation of JDFI reserve
+    IUniswapV2Pair(_uniswapPair).skim(address(this));
+    uint rewards = balanceOf(address(this));
 
-    // TODO: set burn rate
+    // TODO: zero-division
+
+    uint jdfiStakingPoolStaked = _jdfiStakingPool.totalSupply();
+    uint uniswapStakingPoolStaked = balanceOf(_uniswapPair) * _uniswapStakingPool.totalSupply() / IUniswapV2Pair(_uniswapPair).totalSupply();
+
+    uint totalWeight = jdfiStakingPoolStaked + uniswapStakingPoolStaked * 3;
+
+    uint jdfiStakingPoolRewards = rewards * jdfiStakingPoolStaked / totalWeight;
+    uint uniswapStakingPoolRewards = rewards - jdfiStakingPoolRewards;
+
+    if (jdfiStakingPoolRewards > 0) {
+      _transfer(address(this), address(_jdfiStakingPool), jdfiStakingPoolRewards);
+      _jdfiStakingPool.distributeRewards(jdfiStakingPoolRewards);
+    }
+
+    if (uniswapStakingPoolRewards > 0) {
+      _transfer(address(this), address(_uniswapStakingPool), uniswapStakingPoolRewards);
+      _uniswapStakingPool.distributeRewards(uniswapStakingPoolRewards);
+    }
+
+    // set fee for the next week
+
+    uint increase = _votesIncrease;
+    uint decrease = _votesDecrease;
+
+    if (increase > decrease) {
+      _fee = FEE_BASE + _sigmoid(increase - decrease);
+    } else if (increase < decrease) {
+      _fee = FEE_BASE - _sigmoid(decrease - increase);
+    } else {
+      _fee = FEE_BASE;
+    }
+
+    _votesIncrease = 0;
+    _votesDecrease = 0;
   }
 
   /**
@@ -167,7 +271,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _mint(pair, distributed);
 
     // JDFI transfers are reverted up to this point; Uniswap pool is guaranteed to have no liquidity
-    _initialLiquidity = IUniswapV2Pair(pair).mint(address(this));
+    _initialUniTotalSupply = IUniswapV2Pair(pair).mint(address(this)) + IUniswapV2Pair(_uniswapPair).MINIMUM_LIQUIDITY();
 
     // set initial fee
     _fee = FEE_BASE;
@@ -186,6 +290,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
   /**
    * @notice calculate fee offset based on net votes
+   * @dev input is a uint, therefore sigmoid is only implemented for positive values
    * @return uint fee offset from FEE_BASE
    */
   function _sigmoid (uint net) private pure returns (uint) {
