@@ -148,14 +148,14 @@ contract('JDFIStakingPool', function (accounts) {
       await jusdefi.mint(account, amount);
       await instance.stake(amount, { from: account });
 
-      // TODO: dynamic burn rate
-      let burnRate = new BN(1500);
+      // TODO: dynamic fee
+      let fee = new BN(750);
 
       let initialBalance = await jusdefi.balanceOf.call(account);
       await instance.unstake(amount, { from: account });
       let finalBalance = await jusdefi.balanceOf.call(account);
 
-      let burned = amount.mul(burnRate).div(BP_DIVISOR);
+      let burned = amount.mul(fee).div(BP_DIVISOR);
       assert(initialBalance.add(amount).sub(burned).eq(finalBalance));
     });
   });
@@ -168,8 +168,8 @@ contract('JDFIStakingPool', function (accounts) {
       await instance.stake(amount, { from: account });
 
       await jusdefi.distributeJDFIStakingPoolRewards(amount);
-      // TODO: dynamic burn rate
-      let burnRate = new BN(1500);
+      // TODO: dynamic fee
+      let fee = new BN(750);
 
       let rewards = await instance.rewardsOf.call(account);
       assert(!rewards.isZero());
@@ -178,7 +178,7 @@ contract('JDFIStakingPool', function (accounts) {
       await instance.withdraw({ from: account });
       let finalBalance = await jusdefi.balanceOf.call(account);
 
-      let burned = rewards.mul(burnRate).div(BP_DIVISOR);
+      let burned = rewards.mul(fee).div(BP_DIVISOR);
       assert(initialBalance.add(rewards).sub(burned).eq(finalBalance));
     });
 

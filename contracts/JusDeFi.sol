@@ -26,9 +26,9 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint private _lastBuybackAt;
   uint private _lastRebaseAt;
 
-  // burn rate specified in basis points
-  uint public _burnRate; // initialized at 0; not set until #liquidityEventClose
-  uint private constant BURN_RATE_BASE = 1500;
+  // fee specified in basis points
+  uint public _fee; // initialized at 0; not set until #liquidityEventClose
+  uint private constant FEE_BASE = 750;
   uint private constant BP_DIVISOR = 10000;
 
   uint private constant RESERVE_TEAM = 2000 ether;
@@ -94,7 +94,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
    * @param amount quantity of tokens to transfer, before deduction
    */
   function burnAndTransfer (address account, uint amount) override external {
-    uint withheld = amount * _burnRate / BP_DIVISOR;
+    uint withheld = amount * _fee / BP_DIVISOR;
     _transfer(msg.sender, address(this), withheld);
     _burn(address(this), withheld / 2);
     _transfer(msg.sender, account, amount - withheld);
@@ -151,7 +151,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     // require minimum deposit to avoid nonspecific Uniswap error: ds-math-sub-underflow
     require(distributed >= 1 ether, 'JusDeFi: insufficient liquidity added');
 
-    // burn rate initialized at zero, so unstaked amount is 1:1
+    // fee initialized at zero, so unstaked amount is 1:1
     _jdfiStakingPool.unstake(remaining);
     _burn(address(this), remaining);
 
@@ -164,8 +164,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
     // JDFI transfers are reverted up to this point; Uniswap pool is guaranteed to have no liquidity
     _initialLiquidity = IUniswapV2Pair(pair).mint(address(this));
 
-    // set initial burn rate
-    _burnRate = BURN_RATE_BASE;
+    // set initial fee
+    _fee = FEE_BASE;
   }
 
   /**

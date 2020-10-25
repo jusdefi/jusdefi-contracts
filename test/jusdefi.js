@@ -94,7 +94,7 @@ contract('JusDeFi', function (accounts) {
   });
 
   describe('#burnAndTransfer', function () {
-    it('burns according to current burn rate before transfer', async function () {
+    it('applies current fee before transfer', async function () {
       await time.increaseTo(await instance._liquidityEventClosedAt.call());
       await instance.liquidityEventDeposit({ from: DEPOSITOR, value: new BN(web3.utils.toWei('1')) });
       await instance.liquidityEventClose();
@@ -104,7 +104,7 @@ contract('JusDeFi', function (accounts) {
 
       await instance.burnAndTransfer(NOBODY, amount, { from: NOBODY });
 
-      assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(1500)).div(BP_DIVISOR))));
+      assert((await instance.balanceOf.call(NOBODY)).eq(amount.sub(amount.mul(new BN(750)).div(BP_DIVISOR))));
     });
   });
 
@@ -198,14 +198,14 @@ contract('JusDeFi', function (accounts) {
       assert(initialSupply.sub(burned).eq(finalSupply));
     });
 
-    it('sets initial burn rate to 15%', async function () {
+    it('sets initial fee to 7.5%', async function () {
       let value = new BN(web3.utils.toWei('1'));
       await time.increaseTo(await instance._liquidityEventClosedAt.call());
       await instance.liquidityEventDeposit({ from: DEPOSITOR, value });
 
-      assert((await instance._burnRate.call()).eq(new BN(0)));
+      assert((await instance._fee.call()).eq(new BN(0)));
       await instance.liquidityEventClose();
-      assert((await instance._burnRate.call()).eq(new BN(1500)));
+      assert((await instance._fee.call()).eq(new BN(750)));
     });
 
     describe('reverts if', function () {

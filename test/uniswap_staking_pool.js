@@ -402,9 +402,9 @@ contract('UniswapStakingPool', function (accounts) {
       assert(finalBalanceJDFIWETHUNIV2S.isZero());
       assert(initialBalanceETH.add(valueETH).sub(gasUsed).eq(finalBalanceETH));
 
-      // TODO: dynamic burn rate
-      let burnRate = new BN(1500);
-      let burned = valueJDFI.mul(burnRate).div(BP_DIVISOR);
+      // TODO: dynamic fee
+      let fee = new BN(750);
+      let burned = valueJDFI.mul(fee).div(BP_DIVISOR);
       assert(initialBalanceJDFI.add(valueJDFI).sub(burned).eq(finalBalanceJDFI));
     });
 
@@ -468,8 +468,8 @@ contract('UniswapStakingPool', function (accounts) {
       await instance.methods['stake(uint256)'](amount, { from: account });
 
       await jusdefi.distributeUniswapStakingPoolRewards(amount);
-      // TODO: dynamic burn rate
-      let burnRate = new BN(1500);
+      // TODO: dynamic fee
+      let fee = new BN(750);
 
       let rewards = await instance.rewardsOf.call(account);
       assert(!rewards.isZero());
@@ -478,7 +478,7 @@ contract('UniswapStakingPool', function (accounts) {
       await instance.withdraw({ from: account });
       let finalBalance = await jusdefi.balanceOf.call(account);
 
-      let burned = rewards.mul(burnRate).div(BP_DIVISOR);
+      let burned = rewards.mul(fee).div(BP_DIVISOR);
       assert(initialBalance.add(rewards).sub(burned).eq(finalBalance));
     });
 
