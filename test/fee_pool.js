@@ -14,7 +14,7 @@ const {
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
-const UniswapStakingPool = artifacts.require('UniswapStakingPool');
+const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 
@@ -211,7 +211,7 @@ contract('FeePool', function (accounts) {
       await jusdefi.mint(instance.address, amount);
 
       let jdfiStakingPool = await JDFIStakingPool.at(await jusdefi._jdfiStakingPool.call());
-      let uniswapStakingPool = await UniswapStakingPool.at(await jusdefi._uniswapStakingPool.call());
+      let univ2StakingPool = await UNIV2StakingPool.at(await jusdefi._univ2StakingPool.call());
       let pair = await IUniswapV2Pair.at(await jusdefi._uniswapPair.call());
 
       while (new Date(await time.latest() * 1000).getUTCDay() !== 0) {
@@ -225,7 +225,7 @@ contract('FeePool', function (accounts) {
 
       await jdfiStakingPool.stake(amount, { from: jdfiStaker });
 
-      // add to uniswapStakingPool
+      // add to univ2StakingPool
 
       await jusdefi.mint(uniswapStaker, amount);
 
@@ -242,21 +242,21 @@ contract('FeePool', function (accounts) {
       );
 
       let uniBalance = await pair.balanceOf.call(uniswapStaker);
-      await pair.approve(uniswapStakingPool.address, uniBalance, { from: uniswapStaker });
-      await uniswapStakingPool.methods['stake(uint256)'](uniBalance, { from: uniswapStaker });
+      await pair.approve(univ2StakingPool.address, uniBalance, { from: uniswapStaker });
+      await univ2StakingPool.methods['stake(uint256)'](uniBalance, { from: uniswapStaker });
 
       let initialJDFIStakerRewards = await jdfiStakingPool.rewardsOf.call(jdfiStaker);
-      let initialUniswapStakerRewards = await uniswapStakingPool.rewardsOf.call(uniswapStaker);
+      let initialUniswapStakerRewards = await univ2StakingPool.rewardsOf.call(uniswapStaker);
 
       await instance.rebase();
 
       let finalJDFIStakerRewards = await jdfiStakingPool.rewardsOf.call(jdfiStaker);
-      let finalUniswapStakerRewards = await uniswapStakingPool.rewardsOf.call(uniswapStaker);
+      let finalUniswapStakerRewards = await univ2StakingPool.rewardsOf.call(uniswapStaker);
 
       assert(!finalJDFIStakerRewards.sub(initialJDFIStakerRewards).isZero());
 
       // both pools have equal JDFI amount
-      // UniswapStakingPool earns 3x
+      // UNIV2StakingPool earns 3x
 
       assert(
         finalJDFIStakerRewards.sub(initialJDFIStakerRewards).eq(

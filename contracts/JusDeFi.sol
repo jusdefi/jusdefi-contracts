@@ -12,7 +12,7 @@ import './interfaces/IStakingPool.sol';
 import './interfaces/IJDFIStakingPool.sol';
 import './FeePool.sol';
 import './JDFIStakingPool.sol';
-import './UniswapStakingPool.sol';
+import './UNIV2StakingPool.sol';
 
 contract JusDeFi is IJusDeFi, ERC20 {
   address payable private _uniswapRouter;
@@ -20,7 +20,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
   address payable public _feePool;
   address public _jdfiStakingPool;
-  address public _uniswapStakingPool;
+  address public _univ2StakingPool;
 
   bool public _liquidityEventOpen;
   uint public _liquidityEventClosedAt;
@@ -49,7 +49,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
 
     _jdfiStakingPool = address(new JDFIStakingPool(initialStake));
-    _uniswapStakingPool = address(new UniswapStakingPool(uniswapPair, uniswapRouter));
+    _univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
     _mint(_jdfiStakingPool, initialStake);
@@ -62,7 +62,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     // enable trusted addresses to transfer tokens without approval
     _transferWhitelist[_jdfiStakingPool] = true;
-    _transferWhitelist[_uniswapStakingPool] = true;
+    _transferWhitelist[_univ2StakingPool] = true;
     _transferWhitelist[uniswapRouter] = true;
 
     _uniswapRouter = uniswapRouter;
@@ -138,7 +138,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     _feePool = payable(new FeePool(
       _jdfiStakingPool,
-      _uniswapStakingPool,
+      _univ2StakingPool,
       _uniswapRouter,
       _uniswapPair,
       distributed

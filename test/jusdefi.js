@@ -12,7 +12,7 @@ const {
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
-const UniswapStakingPool = artifacts.require('UniswapStakingPool');
+const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 
@@ -23,7 +23,7 @@ contract('JusDeFi', function (accounts) {
 
   let instance;
   let jdfiStakingPool;
-  let uniswapStakingPool;
+  let univ2StakingPool;
 
   let closeLiquidityEvent = async function () {
     await time.increaseTo(await instance._liquidityEventClosedAt.call());
@@ -34,7 +34,7 @@ contract('JusDeFi', function (accounts) {
   beforeEach(async function () {
     instance = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
     jdfiStakingPool = await JDFIStakingPool.at(await instance._jdfiStakingPool.call());
-    uniswapStakingPool = await UniswapStakingPool.at(await instance._uniswapStakingPool.call());
+    univ2StakingPool = await UNIV2StakingPool.at(await instance._univ2StakingPool.call());
   });
 
   describe('constructor', function () {
@@ -42,8 +42,8 @@ contract('JusDeFi', function (accounts) {
       assert(web3.utils.isAddress(jdfiStakingPool.address));
       assert.notEqual(jdfiStakingPool.address, constants.ZERO_ADDRESS);
 
-      assert(web3.utils.isAddress(uniswapStakingPool.address));
-      assert.notEqual(uniswapStakingPool.address, constants.ZERO_ADDRESS);
+      assert(web3.utils.isAddress(univ2StakingPool.address));
+      assert.notEqual(univ2StakingPool.address, constants.ZERO_ADDRESS);
     });
 
     it('mints and stakes team reserve and justice reserve and transfers to sender', async function () {

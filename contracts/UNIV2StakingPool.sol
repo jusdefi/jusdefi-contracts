@@ -10,7 +10,7 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import './interfaces/IJusDeFi.sol';
 import './StakingPool.sol';
 
-contract UniswapStakingPool is StakingPool {
+contract UNIV2StakingPool is StakingPool {
   using Address for address payable;
 
   address private _jusdefi;

@@ -20,7 +20,7 @@ contract FeePool {
   address private _uniswapPair;
 
   address public _jdfiStakingPool;
-  address public _uniswapStakingPool;
+  address public _univ2StakingPool;
 
   // fee specified in basis points
   uint public _fee; // initialized at 0; not set until #liquidityEventClose
@@ -37,14 +37,14 @@ contract FeePool {
 
   constructor (
     address jdfiStakingPool,
-    address uniswapStakingPool,
+    address univ2StakingPool,
     address payable uniswapRouter,
     address uniswapPair,
     uint liquidityEventDistribution
   ) {
     _jusdefi = msg.sender;
     _jdfiStakingPool = jdfiStakingPool;
-    _uniswapStakingPool = uniswapStakingPool;
+    _univ2StakingPool = univ2StakingPool;
     _uniswapRouter = uniswapRouter;
     _uniswapPair = uniswapPair;
 
@@ -146,19 +146,19 @@ contract FeePool {
     // TODO: zero-division
 
     uint jdfiStakingPoolStaked = IERC20(_jdfiStakingPool).totalSupply();
-    uint uniswapStakingPoolStaked = IJusDeFi(_jusdefi).balanceOf(_uniswapPair) * IERC20(_uniswapStakingPool).totalSupply() / IUniswapV2Pair(_uniswapPair).totalSupply();
+    uint univ2StakingPoolStaked = IJusDeFi(_jusdefi).balanceOf(_uniswapPair) * IERC20(_univ2StakingPool).totalSupply() / IUniswapV2Pair(_uniswapPair).totalSupply();
 
-    uint totalWeight = jdfiStakingPoolStaked + uniswapStakingPoolStaked * 3;
+    uint totalWeight = jdfiStakingPoolStaked + univ2StakingPoolStaked * 3;
 
     uint jdfiStakingPoolRewards = rewards * jdfiStakingPoolStaked / totalWeight;
-    uint uniswapStakingPoolRewards = rewards - jdfiStakingPoolRewards;
+    uint univ2StakingPoolRewards = rewards - jdfiStakingPoolRewards;
 
     if (jdfiStakingPoolRewards > 0) {
       IStakingPool(_jdfiStakingPool).distributeRewards(jdfiStakingPoolRewards);
     }
 
-    if (uniswapStakingPoolRewards > 0) {
-      IStakingPool(_uniswapStakingPool).distributeRewards(uniswapStakingPoolRewards);
+    if (univ2StakingPoolRewards > 0) {
+      IStakingPool(_univ2StakingPool).distributeRewards(univ2StakingPoolRewards);
     }
 
     // set fee for the next week

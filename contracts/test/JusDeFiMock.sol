@@ -17,8 +17,8 @@ contract JusDeFiMock is JusDeFi {
     IStakingPool(_jdfiStakingPool).distributeRewards(amount);
   }
 
-  function distributeUniswapStakingPoolRewards (uint amount) external {
+  function distributeUNIV2StakingPoolRewards (uint amount) external {
     _mint(address(this), amount);
-    IStakingPool(_uniswapStakingPool).distributeRewards(amount);
+    IStakingPool(_univ2StakingPool).distributeRewards(amount);
   }
 }

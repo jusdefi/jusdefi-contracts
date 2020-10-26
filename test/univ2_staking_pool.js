@@ -13,11 +13,11 @@ const {
 
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
-const UniswapStakingPool = artifacts.require('UniswapStakingPool');
+const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 
-contract('UniswapStakingPool', function (accounts) {
+contract('UNIV2StakingPool', function (accounts) {
   const [NOBODY, DEPLOYER, ...RECIPIENTS] = accounts;
 
   const BP_DIVISOR = new BN(10000);
@@ -41,7 +41,7 @@ contract('UniswapStakingPool', function (accounts) {
 
   beforeEach(async function () {
     jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
-    instance = await UniswapStakingPool.at(await jusdefi._uniswapStakingPool.call());
+    instance = await UNIV2StakingPool.at(await jusdefi._univ2StakingPool.call());
 
     // close liquidity event
 
@@ -94,7 +94,7 @@ contract('UniswapStakingPool', function (accounts) {
         { from: account, value: amountJDFI.div(new BN(4)) }
       );
 
-      await jusdefi.distributeUniswapStakingPoolRewards(amountJDFI);
+      await jusdefi.distributeUNIV2StakingPoolRewards(amountJDFI);
 
       let initialBalanceJDFIWETHUNIV2S = await instance.balanceOf.call(account);
       await instance.compound(amountETH, { from: account, value: amountETH });
@@ -116,7 +116,7 @@ contract('UniswapStakingPool', function (accounts) {
         { from: account, value: amountJDFI.div(new BN(4)) }
       );
 
-      await jusdefi.distributeUniswapStakingPoolRewards(amountJDFI);
+      await jusdefi.distributeUNIV2StakingPoolRewards(amountJDFI);
 
       assert((await instance.rewardsOf.call(account)).eq(amountJDFI));
       await instance.compound(amountETH, { from: account, value: amountETH });
@@ -136,7 +136,7 @@ contract('UniswapStakingPool', function (accounts) {
         { from: account, value: amountJDFI.div(new BN(4)) }
       );
 
-      await jusdefi.distributeUniswapStakingPoolRewards(amountJDFI);
+      await jusdefi.distributeUNIV2StakingPoolRewards(amountJDFI);
 
       let initialBalance = await balance.current(account);
       let tx = await instance.compound(amountETH, { from: account, value: amountETH.mul(new BN(2)), gasPrice: new BN(1) });
@@ -466,7 +466,7 @@ contract('UniswapStakingPool', function (accounts) {
 
       await instance.methods['stake(uint256)'](amount, { from: account });
 
-      await jusdefi.distributeUniswapStakingPoolRewards(amount);
+      await jusdefi.distributeUNIV2StakingPoolRewards(amount);
       let feePool = await FeePool.at(await jusdefi._feePool.call());
       let fee = await feePool._fee.call();
 
@@ -493,7 +493,7 @@ contract('UniswapStakingPool', function (accounts) {
 
       await instance.methods['stake(uint256)'](amount, { from: account });
 
-      await jusdefi.distributeUniswapStakingPoolRewards(amount);
+      await jusdefi.distributeUNIV2StakingPoolRewards(amount);
 
       assert(!(await instance.rewardsOf.call(account)).isZero());
       await instance.withdraw({ from: account });
