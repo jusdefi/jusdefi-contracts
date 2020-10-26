@@ -11,7 +11,8 @@ contract StakingPoolMock is StakingPool {
     _mint(account, amount);
   }
 
-  function distributeRewards (uint amount) external {
+  // override needed for IStakingPool interface
+  function distributeRewards (uint amount) override external {
     _distributeRewards(amount);
   }
 

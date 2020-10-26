@@ -1,5 +1,6 @@
 const {
   BN,
+  expectRevert,
 } = require('@openzeppelin/test-helpers');
 
 const StakingPool = artifacts.require('StakingPoolMock');
@@ -89,6 +90,17 @@ contract('StakingPool', function (accounts) {
         let rewards = await instance.rewardsOf.call(holder);
         assert(balance.eq(rewards));
       }
+    });
+
+    describe('reverts if', function () {
+      it('total supply is zero', async function () {
+        assert((await instance.totalSupply.call()).isZero());
+
+        await expectRevert(
+          instance.distributeRewards(new BN(0)),
+          'StakingPool: supply must be greater than zero'
+        );
+      });
     });
   });
 

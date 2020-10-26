@@ -151,11 +151,10 @@ contract UniswapStakingPool is StakingPool {
 
   /**
    * @notice distribute rewards to stakers
-   * @dev must be called by JusDeFi contract in conjunction with JDFI transfer
    * @param amount quantity to distribute
    */
-  function distributeRewards (uint amount) external {
-    require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
+  function distributeRewards (uint amount) override external {
+    IJusDeFi(_jusdefi).transferFrom(msg.sender, address(this), amount);
     _distributeRewards(amount);
   }
 }

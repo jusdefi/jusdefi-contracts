@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 
 import '../JusDeFi.sol';
+import '../interfaces/IStakingPool.sol';
 
 contract JusDeFiMock is JusDeFi {
   constructor (address payable uniswapRouter) JusDeFi(uniswapRouter) {}
@@ -12,12 +13,12 @@ contract JusDeFiMock is JusDeFi {
   }
 
   function distributeJDFIStakingPoolRewards (uint amount) external {
-    _mint(address(_jdfiStakingPool), amount);
-    _jdfiStakingPool.distributeRewards(amount);
+    _mint(address(this), amount);
+    IStakingPool(_jdfiStakingPool).distributeRewards(amount);
   }
 
   function distributeUniswapStakingPoolRewards (uint amount) external {
-    _mint(address(_uniswapStakingPool), amount);
-    _uniswapStakingPool.distributeRewards(amount);
+    _mint(address(this), amount);
+    IStakingPool(_uniswapStakingPool).distributeRewards(amount);
   }
 }

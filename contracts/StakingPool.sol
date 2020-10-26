@@ -4,7 +4,9 @@ pragma solidity ^0.7.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
-abstract contract StakingPool is ERC20 {
+import './interfaces/IStakingPool.sol';
+
+abstract contract StakingPool is IStakingPool, ERC20 {
   uint private constant REWARD_SCALAR = 1e18;
 
   // values scaled by REWARD_SCALAR
@@ -30,8 +32,9 @@ abstract contract StakingPool is ERC20 {
    * @param amount quantity of rewards to distribute
    */
   function _distributeRewards (uint amount) internal {
-    // TODO: zero totalSupply
-    _cumulativeRewardPerToken += amount * REWARD_SCALAR / totalSupply();
+    uint supply = totalSupply();
+    require(supply > 0, 'StakingPool: supply must be greater than zero');
+    _cumulativeRewardPerToken += amount * REWARD_SCALAR / supply;
   }
 
   /**

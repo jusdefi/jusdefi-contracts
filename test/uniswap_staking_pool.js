@@ -12,6 +12,7 @@ const {
 } = require('../data/addresses.js');
 
 const JusDeFi = artifacts.require('JusDeFiMock');
+const FeePool = artifacts.require('FeePool');
 const UniswapStakingPool = artifacts.require('UniswapStakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
@@ -193,7 +194,6 @@ contract('UniswapStakingPool', function (accounts) {
         let [account] = RECIPIENTS;
         let amountJDFI = new BN(web3.utils.toWei('1'));
         await jusdefi.mint(account, amountJDFI);
-        await jusdefi.approve(uniswapRouter, amountJDFI, { from: account });
 
         let pair = await IUniswapV2Pair.at(await jusdefi._uniswapPair.call());
         await addUniswapLiquidity(account, amountJDFI);
@@ -402,7 +402,8 @@ contract('UniswapStakingPool', function (accounts) {
       assert(finalBalanceJDFIWETHUNIV2S.isZero());
       assert(initialBalanceETH.add(valueETH).sub(gasUsed).eq(finalBalanceETH));
 
-      let fee = await jusdefi._fee.call();
+      let feePool = await FeePool.at(await jusdefi._feePool.call());
+      let fee = await feePool._fee.call();
       let burned = valueJDFI.mul(fee).div(BP_DIVISOR);
       assert(initialBalanceJDFI.add(valueJDFI).sub(burned).eq(finalBalanceJDFI));
     });
@@ -457,7 +458,6 @@ contract('UniswapStakingPool', function (accounts) {
       let [account] = RECIPIENTS;
       let amountJDFI = new BN(web3.utils.toWei('1'));
       await jusdefi.mint(account, amountJDFI);
-      await jusdefi.approve(uniswapRouter, amountJDFI, { from: account });
 
       let pair = await IUniswapV2Pair.at(await jusdefi._uniswapPair.call());
       await addUniswapLiquidity(account, amountJDFI);
@@ -467,7 +467,8 @@ contract('UniswapStakingPool', function (accounts) {
       await instance.methods['stake(uint256)'](amount, { from: account });
 
       await jusdefi.distributeUniswapStakingPoolRewards(amount);
-      let fee = await jusdefi._fee.call();
+      let feePool = await FeePool.at(await jusdefi._feePool.call());
+      let fee = await feePool._fee.call();
 
       let rewards = await instance.rewardsOf.call(account);
       assert(!rewards.isZero());
@@ -484,7 +485,6 @@ contract('UniswapStakingPool', function (accounts) {
       let [account] = RECIPIENTS;
       let amountJDFI = new BN(web3.utils.toWei('1'));
       await jusdefi.mint(account, amountJDFI);
-      await jusdefi.approve(uniswapRouter, amountJDFI, { from: account });
 
       let pair = await IUniswapV2Pair.at(await jusdefi._uniswapPair.call());
       await addUniswapLiquidity(account, amountJDFI);
@@ -502,13 +502,23 @@ contract('UniswapStakingPool', function (accounts) {
   });
 
   describe('#distributeRewards', function () {
-    describe('reverts if', function () {
-      it('sender is not JusDeFi', async function () {
-        await expectRevert(
-          instance.distributeRewards(new BN(0)),
-          'JusDeFi: sender must be JusDeFi contract'
-        );
-      });
+    it('transfers given amount of JDFI from sender and increases rewards for stakers', async function () {
+      let [account] = RECIPIENTS;
+      let amountJDFI = new BN(web3.utils.toWei('1'));
+      await jusdefi.mint(account, amountJDFI.mul(new BN(2)));
+
+      let pair = await IUniswapV2Pair.at(await jusdefi._uniswapPair.call());
+      await addUniswapLiquidity(account, amountJDFI);
+      let amount = await pair.balanceOf.call(account);
+      await pair.approve(instance.address, amount, { from: account });
+
+      await instance.methods['stake(uint256)'](amount, { from: account });
+
+      assert((await instance.rewardsOf.call(account)).isZero());
+      await instance.distributeRewards(amountJDFI, { from: account });
+      assert(!(await instance.rewardsOf.call(account)).isZero());
+
+      assert((await jusdefi.balanceOf.call(account)).isZero());
     });
   });
 });

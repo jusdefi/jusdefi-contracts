@@ -3,9 +3,10 @@
 pragma solidity ^0.7.0;
 
 import './interfaces/IJusDeFi.sol';
+import './interfaces/IJDFIStakingPool.sol';
 import './StakingPool.sol';
 
-contract JDFIStakingPool is StakingPool {
+contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   address private _jusdefi;
 
   mapping (address => uint) private _lockedBalances;
@@ -49,7 +50,7 @@ contract JDFIStakingPool is StakingPool {
    * @notice unstake and withdraw JDFI
    * @param amount quantity of tokens to unstake
    */
-  function unstake (uint amount) external {
+  function unstake (uint amount) override external {
     _burn(msg.sender, amount);
     IJusDeFi(_jusdefi).burnAndTransfer(msg.sender, amount);
   }
@@ -73,11 +74,10 @@ contract JDFIStakingPool is StakingPool {
 
   /**
    * @notice distribute rewards to stakers
-   * @dev must be called by JusDeFi contract in conjunction with JDFI transfer
    * @param amount quantity to distribute
    */
-  function distributeRewards (uint amount) external {
-    require(msg.sender == _jusdefi, 'JusDeFi: sender must be JusDeFi contract');
+  function distributeRewards (uint amount) override external {
+    IJusDeFi(_jusdefi).transferFrom(msg.sender, address(this), amount);
     _distributeRewards(amount);
   }
 
@@ -114,8 +114,9 @@ contract JDFIStakingPool is StakingPool {
 
     uint locked = lockedBalanceOf(from);
 
-    if (locked > 0) {
-      require(balanceOf(from) - locked >= amount, 'JusDeFi: amount exceeds unlocked balance');
-    }
+    require(
+      locked == 0 || balanceOf(from) - locked >= amount,
+      'JusDeFi: amount exceeds unlocked balance'
+    );
   }
 }
