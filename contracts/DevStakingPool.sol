@@ -18,6 +18,9 @@ contract DevStakingPool is StakingPool {
     _mint(msg.sender, 10000 ether);
   }
 
+  /**
+   * @notice withdraw earned WETH rewards
+   */
   function withdraw () external {
     IERC20(_weth).transfer(msg.sender, rewardsOf(msg.sender));
     _clearRewards(msg.sender);
