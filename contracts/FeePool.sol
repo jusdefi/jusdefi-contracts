@@ -96,11 +96,11 @@ contract FeePool {
     // check output to fail fast if price has changed beyond allowed limits
 
     uint[] memory outputs = IUniswapV2Router02(_uniswapRouter).getAmountsOut(
-      1 gwei,
+      1e9,
       path
     );
 
-    uint requiredOutput = IJusDeFi(_jusdefi).consult(1 gwei);
+    uint requiredOutput = IJusDeFi(_jusdefi).consult(1e9);
 
     require(outputs[1] * (BP_DIVISOR + BUYBACK_SLIPPAGE) / BP_DIVISOR  >= requiredOutput, 'JusDeFi: buyback price slippage too high');
 
