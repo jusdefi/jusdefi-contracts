@@ -1,5 +1,6 @@
 const {
   BN,
+  balance,
   constants,
   time,
   expectEvent,
@@ -13,6 +14,8 @@ const {
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
+const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
+const IERC20 = artifacts.require('IERC20');
 
 contract('JDFIStakingPool', function (accounts) {
   const [NOBODY, DEPLOYER, ...RECIPIENTS] = accounts;
@@ -31,6 +34,14 @@ contract('JDFIStakingPool', function (accounts) {
     await time.increaseTo(await jusdefi._liquidityEventClosedAt.call());
     await jusdefi.liquidityEventDeposit({ from: DEPLOYER, value: new BN(web3.utils.toWei('1')) });
     await jusdefi.liquidityEventClose();
+  });
+
+  describe('constructor', function () {
+    it('approves Dev Staking Pool to spend WETH', async function () {
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+      let weth = await IERC20.at(await router.WETH.call());
+      assert((await weth.allowance.call(instance.address, await jusdefi._devStakingPool.call())).eq(constants.MAX_UINT256));
+    });
   });
 
   describe('#name', function () {
@@ -207,9 +218,30 @@ contract('JDFIStakingPool', function (accounts) {
       assert((await instance.lockedBalanceOf.call(NOBODY)).isZero());
     });
 
-    it('distributes ETH to team');
+    it('distributes ETH in equal parts to Fee Pool and Dev Staking Pool', async function () {
+      let value = new BN(web3.utils.toWei('1'));
+      await instance.airdropLocked([NOBODY], [value.mul(new BN(4))], { from: DEPLOYER });
+
+      await instance.unlock({ from: NOBODY, value });
+
+      assert((await balance.current(await jusdefi._feePool.call())).eq(value.div(new BN(2))));
+      // Dev Staking Pool value stored as WETH
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+      let weth = await IERC20.at(await router.WETH.call());
+      assert((await weth.balanceOf.call(await jusdefi._devStakingPool.call())).eq(value.div(new BN(2))));
+    });
 
     describe('reverts if', function () {
+      it('liquidity event is still in progress', async function () {
+        let jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+        let instance = await JDFIStakingPool.at(await jusdefi._jdfiStakingPool.call());
+
+        await expectRevert(
+          instance.unlock(),
+          'JusDeFi: liquidity event still in progress'
+        );
+      });
+
       it('sender has insufficient locked balance', async function () {
         await expectRevert(
           instance.unlock({ from: NOBODY, value: new BN(1) }),

@@ -7,4 +7,5 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 interface IJusDeFi is IERC20 {
   function burn (uint amount) external;
   function burnAndTransfer (address account, uint amount) external;
+  function _feePool () external view returns (address payable);
 }

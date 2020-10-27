@@ -31,7 +31,7 @@ contract UNIV2StakingPool is StakingPool {
   }
 
   receive () external payable {
-    require(msg.sender == _uniswapRouter, 'JusDeFi: sender must be Uniswap Router');
+    require(msg.sender == _uniswapRouter, 'JusDeFi: invalid ETH deposit');
   }
 
   /**

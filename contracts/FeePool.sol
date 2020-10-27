@@ -6,7 +6,6 @@ import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
-import '@uniswap/v2-periphery/contracts/interfaces/IWETH.sol';
 
 import '@nomiclabs/buidler/console.sol';
 
@@ -39,8 +38,7 @@ contract FeePool {
     address jdfiStakingPool,
     address univ2StakingPool,
     address payable uniswapRouter,
-    address uniswapPair,
-    uint liquidityEventDistribution
+    address uniswapPair
   ) {
     _jusdefi = msg.sender;
     _jdfiStakingPool = jdfiStakingPool;
@@ -56,7 +54,7 @@ contract FeePool {
   }
 
   receive () external payable {
-    require(msg.sender == _uniswapRouter, 'JusDeFi: sender must be Uniswap Router');
+    require(msg.sender == _uniswapRouter || msg.sender == _jdfiStakingPool, 'JusDeFi: invalid ETH deposit');
   }
 
   function calculateWithholding (uint amount) external view returns (uint) {

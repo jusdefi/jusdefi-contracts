@@ -11,6 +11,7 @@ import './interfaces/IJusDeFi.sol';
 import './interfaces/IStakingPool.sol';
 import './interfaces/IJDFIStakingPool.sol';
 import './FeePool.sol';
+import './DevStakingPool.sol';
 import './JDFIStakingPool.sol';
 import './UNIV2StakingPool.sol';
 
@@ -18,7 +19,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
   address payable private _uniswapRouter;
   address public _uniswapPair;
 
-  address payable public _feePool;
+  address payable override public _feePool;
+  address public _devStakingPool;
   address public _jdfiStakingPool;
   address public _univ2StakingPool;
 
@@ -39,20 +41,23 @@ contract JusDeFi is IJusDeFi, ERC20 {
   )
     ERC20('JusDeFi', 'JDFI')
   {
+    address payable weth = payable(IUniswapV2Router02(uniswapRouter).WETH());
+
     address uniswapPair = IUniswapV2Factory(
       IUniswapV2Router02(uniswapRouter).factory()
-    ).createPair(
-      IUniswapV2Router02(uniswapRouter).WETH(),
-      address(this)
-    );
+    ).createPair(weth, address(this));
 
     uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
 
-    _jdfiStakingPool = address(new JDFIStakingPool(initialStake));
+    _devStakingPool = address(new DevStakingPool(weth));
+    _jdfiStakingPool = address(new JDFIStakingPool(initialStake, weth, _devStakingPool));
     _univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
     _mint(_jdfiStakingPool, initialStake);
+
+    // transfer all minted JDFI/E to sender
+    IStakingPool(_devStakingPool).transfer(msg.sender, IStakingPool(_devStakingPool).balanceOf(address(this)));
 
     // transfer team reserve and justice reserve to sender for distribution
     IStakingPool(_jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
@@ -140,8 +145,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
       _jdfiStakingPool,
       _univ2StakingPool,
       _uniswapRouter,
-      _uniswapPair,
-      distributed
+      _uniswapPair
     ));
 
     // unstake and burn (including fee accrued on unstaking)

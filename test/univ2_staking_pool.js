@@ -62,7 +62,7 @@ contract('UNIV2StakingPool', function (accounts) {
       it('sender is not Uniswap Router', async function () {
         await expectRevert(
           send.ether(NOBODY, instance.address, new BN(1)),
-          'JusDeFi: sender must be Uniswap Router'
+          'JusDeFi: invalid ETH deposit'
         );
       });
     });

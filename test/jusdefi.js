@@ -12,6 +12,7 @@ const {
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
+const DevStakingPool = artifacts.require('DevStakingPool');
 const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
@@ -22,6 +23,7 @@ contract('JusDeFi', function (accounts) {
   const BP_DIVISOR = new BN(10000);
 
   let instance;
+  let devStakingPool;
   let jdfiStakingPool;
   let univ2StakingPool;
 
@@ -33,6 +35,7 @@ contract('JusDeFi', function (accounts) {
 
   beforeEach(async function () {
     instance = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    devStakingPool = await DevStakingPool.at(await instance._devStakingPool.call());
     jdfiStakingPool = await JDFIStakingPool.at(await instance._jdfiStakingPool.call());
     univ2StakingPool = await UNIV2StakingPool.at(await instance._univ2StakingPool.call());
   });
@@ -53,6 +56,11 @@ contract('JusDeFi', function (accounts) {
 
     it('mints and stakes liquidity event reserve', async function () {
       let balance = await jdfiStakingPool.balanceOf.call(instance.address);
+      assert(balance.eq(new BN(web3.utils.toWei('10000'))));
+    });
+
+    it('transfers JDFI/E to sender', async function () {
+      let balance = await devStakingPool.balanceOf.call(DEPLOYER);
       assert(balance.eq(new BN(web3.utils.toWei('10000'))));
     });
   });
