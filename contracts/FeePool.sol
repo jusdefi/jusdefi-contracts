@@ -24,6 +24,11 @@ contract FeePool {
   uint private constant FEE_BASE = 1000;
   uint private constant BP_DIVISOR = 10000;
 
+  // allow slippage of 0.6%
+  uint private constant BUYBACK_SLIPPAGE = 60;
+
+  uint private constant UNIV2_STAKING_MULTIPLIER = 3;
+
   uint private _initialUniTotalSupply;
 
   uint public _votesIncrease;
@@ -55,6 +60,11 @@ contract FeePool {
     require(msg.sender == _uniswapRouter || msg.sender == _jdfiStakingPool, 'JusDeFi: invalid ETH deposit');
   }
 
+  /**
+   * @notice calculate quantity of JDFI to withhold (burned and as rewards) on unstake
+   * @param amount quantity untsaked
+   * @return unt quantity withheld
+   */
   function calculateWithholding (uint amount) external view returns (uint) {
     return amount * _fee / BP_DIVISOR;
   }
@@ -79,6 +89,21 @@ contract FeePool {
     require(block.timestamp - _lastBuybackAt > 1 days, 'JusDeFi: buyback already called this week');
     _lastBuybackAt = block.timestamp;
 
+    address[] memory path = new address[](2);
+    path[0] = IUniswapV2Router02(_uniswapRouter).WETH();
+    path[1] = _jusdefi;
+
+    // check output to fail fast if price has changed beyond allowed limits
+
+    uint[] memory outputs = IUniswapV2Router02(_uniswapRouter).getAmountsOut(
+      1 gwei,
+      path
+    );
+
+    uint requiredOutput = IJusDeFi(_jusdefi).consult(1 gwei);
+
+    require(outputs[1] * (BP_DIVISOR + BUYBACK_SLIPPAGE) / BP_DIVISOR  >= requiredOutput, 'JusDeFi: buyback price slippage too high');
+
     uint initialBalance = IJusDeFi(_jusdefi).balanceOf(address(this));
 
     // remove liquidity in excess of original amount
@@ -93,8 +118,7 @@ contract FeePool {
       );
 
       if (delta > 0) {
-        // TODO: minimum output values
-
+        // minimum output not relevant due to earlier check
         IUniswapV2Router02(_uniswapRouter).removeLiquidityETH(
           _jusdefi,
           delta,
@@ -106,14 +130,10 @@ contract FeePool {
       }
     }
 
-    address[] memory path = new address[](2);
-    path[0] = IUniswapV2Router02(_uniswapRouter).WETH();
-    path[1] = _jusdefi;
-
     // buyback JDFI using ETH from withdrawn liquidity and fee votes
-    // TODO: minimum output value
 
     if (address(this).balance > 0) {
+      // minimum output not relevant due to earlier check
       IUniswapV2Router02(_uniswapRouter).swapExactETHForTokens{
         value: address(this).balance
       }(
@@ -142,7 +162,7 @@ contract FeePool {
     uint jdfiStakingPoolStaked = IERC20(_jdfiStakingPool).totalSupply();
     uint univ2StakingPoolStaked = IJusDeFi(_jusdefi).balanceOf(_uniswapPair) * IERC20(_univ2StakingPool).totalSupply() / IUniswapV2Pair(_uniswapPair).totalSupply();
 
-    uint weight = jdfiStakingPoolStaked + univ2StakingPoolStaked * 3;
+    uint weight = jdfiStakingPoolStaked + univ2StakingPoolStaked * UNIV2_STAKING_MULTIPLIER;
 
     // if weight is zero, staked amounts are also zero, avoiding zero-division error
 
@@ -154,7 +174,7 @@ contract FeePool {
 
     if (univ2StakingPoolStaked > 0) {
       IStakingPool(_univ2StakingPool).distributeRewards(
-        rewards * univ2StakingPoolStaked * 3 / weight
+        rewards * univ2StakingPoolStaked * UNIV2_STAKING_MULTIPLIER / weight
       );
     }
 

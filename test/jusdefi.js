@@ -77,6 +77,64 @@ contract('JusDeFi', function (accounts) {
     });
   });
 
+  describe('#consult', function () {
+    it('returns average JDFI output for given ETH amount over last oracle period', async function () {
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+      let value = new BN(web3.utils.toWei('1'));
+
+      await closeLiquidityEvent();
+
+      let initialPrice = await instance.consult.call(value);
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [await router.WETH.call(), instance.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      let intermediatePrice = await instance.consult.call(value);
+
+      await time.increase(60 * 6);
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [await router.WETH.call(), instance.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      let finalPrice = await instance.consult.call(value);
+
+      assert(intermediatePrice.eq(initialPrice));
+      assert(finalPrice.gt(initialPrice));
+    });
+
+    it('returns zero if oracle period has elapsed since last update', async function () {
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+      let value = new BN(web3.utils.toWei('1'));
+
+      assert((await instance.consult.call(value)).isZero());
+
+      await closeLiquidityEvent();
+      await time.increase(60 * 6);
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [await router.WETH.call(), instance.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      assert(!(await instance.consult.call(value)).isZero());
+      await time.increase(60 * 6);
+      assert((await instance.consult.call(value)).isZero());
+    });
+  });
+
   describe('#transfer', function () {
     describe('reverts if', function () {
       it('liquidity event is still in progress', async function () {

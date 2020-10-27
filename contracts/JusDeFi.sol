@@ -3,9 +3,12 @@
 pragma solidity ^0.7.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IWETH.sol';
+import '@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol';
 
 import './interfaces/IJusDeFi.sol';
 import './interfaces/IStakingPool.sol';
@@ -16,6 +19,12 @@ import './JDFIStakingPool.sol';
 import './UNIV2StakingPool.sol';
 
 contract JusDeFi is IJusDeFi, ERC20 {
+  using FixedPoint for FixedPoint.uq112x112;
+  using FixedPoint for FixedPoint.uq144x112;
+  using SafeMath for uint;
+
+  address payable private _weth;
+
   address payable private _uniswapRouter;
   address public _uniswapPair;
 
@@ -36,16 +45,26 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
   uint private constant JDFI_PER_ETH = 4;
 
+  uint private constant ORACLE_PERIOD = 5 minutes;
+
+  FixedPoint.uq112x112 private _priceAverage;
+  uint private _priceCumulativeLast;
+  uint32 private _blockTimestampLast;
+
   constructor (
     address payable uniswapRouter
   )
     ERC20('JusDeFi', 'JDFI')
   {
     address payable weth = payable(IUniswapV2Router02(uniswapRouter).WETH());
+    _weth = weth;
 
     address uniswapPair = IUniswapV2Factory(
       IUniswapV2Router02(uniswapRouter).factory()
     ).createPair(weth, address(this));
+
+    _uniswapRouter = uniswapRouter;
+    _uniswapPair = uniswapPair;
 
     uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
 
@@ -69,9 +88,20 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _transferWhitelist[_jdfiStakingPool] = true;
     _transferWhitelist[_univ2StakingPool] = true;
     _transferWhitelist[uniswapRouter] = true;
+  }
 
-    _uniswapRouter = uniswapRouter;
-    _uniswapPair = uniswapPair;
+  /**
+   * @notice get average JDFI price over the last ORACLE_PERIOD
+   * @dev adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
+   * @param amount quantity of ETH used for purchase
+   * @return uint quantity of JDFI purchased, or zero if ORACLE_PERIOD has passed since las tupdate
+   */
+  function consult (uint amount) override external view returns (uint) {
+    if (block.timestamp - uint(_blockTimestampLast) > ORACLE_PERIOD) {
+      return 0;
+    } else {
+      return _priceAverage.mul(amount).decode144();
+    }
   }
 
   /**
@@ -135,11 +165,12 @@ contract JusDeFi is IJusDeFi, ERC20 {
     require(distributed >= 1 ether, 'JusDeFi: insufficient liquidity added');
 
     // prepare Uniswap for minting my FeePool
-    address pair = _uniswapPair;
-    address weth = IUniswapV2Router02(_uniswapRouter).WETH();
+    IUniswapV2Pair pair = IUniswapV2Pair(_uniswapPair);
+
+    address weth = _weth;
     IWETH(weth).deposit{ value: distributed / JDFI_PER_ETH }();
-    IWETH(weth).transfer(pair, distributed / JDFI_PER_ETH);
-    _mint(pair, distributed);
+    IWETH(weth).transfer(address(pair), distributed / JDFI_PER_ETH);
+    _mint(address(pair), distributed);
 
     _feePool = payable(new FeePool(
       _jdfiStakingPool,
@@ -147,6 +178,10 @@ contract JusDeFi is IJusDeFi, ERC20 {
       _uniswapRouter,
       _uniswapPair
     ));
+
+    // UNI-V2 has been minted, so price is available
+    _priceCumulativeLast =  address(this) > _weth ? pair.price0CumulativeLast() : pair.price1CumulativeLast();
+    _blockTimestampLast = UniswapV2OracleLibrary.currentBlockTimestamp();
 
     // unstake and burn (including fee accrued on unstaking)
     IJDFIStakingPool(_jdfiStakingPool).unstake(remaining);
@@ -158,7 +193,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
   }
 
   /**
-   * @notice OpenZeppelin ERC20 hook: prevent transfers during liquidity event
+   * @notice OpenZeppelin ERC20 hook: prevent transfers during liquidity event, update oracle price
+   * @dev adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
    * @param from sender
    * @param to recipient
    * @param amount quantity transferred
@@ -166,5 +202,29 @@ contract JusDeFi is IJusDeFi, ERC20 {
   function _beforeTokenTransfer (address from, address to, uint amount) override internal {
     require(!_liquidityEventOpen, 'JusDeFi: liquidity event still in progress');
     super._beforeTokenTransfer(from, to, amount);
+
+    address pair = _uniswapPair;
+
+    if (from == pair || (to == pair && from != address(0))) {
+      (
+        uint price0Cumulative,
+        uint price1Cumulative,
+        uint32 blockTimestamp
+      ) = UniswapV2OracleLibrary.currentCumulativePrices(pair);
+
+      uint32 timeElapsed = blockTimestamp - _blockTimestampLast; // overflow is desired
+
+      // only store the ETH -> JDFI price
+      uint priceCumulative = address(this) > _weth ? price0Cumulative : price1Cumulative;
+
+      if (timeElapsed >= ORACLE_PERIOD) {
+        // overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+        _priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - _priceCumulativeLast) / timeElapsed));
+
+        _priceCumulativeLast = priceCumulative;
+        _blockTimestampLast = blockTimestamp;
+      }
+    }
   }
 }

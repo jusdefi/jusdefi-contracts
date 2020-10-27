@@ -17,6 +17,7 @@ const JDFIStakingPool = artifacts.require('JDFIStakingPool');
 const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
+const IERC20 = artifacts.require('IERC20');
 
 contract('FeePool', function (accounts) {
   const [NOBODY, DEPLOYER, ...DEPOSITORS] = accounts;
@@ -177,6 +178,80 @@ contract('FeePool', function (accounts) {
       assert(initialBalance.eq(finalBalance));
     });
 
+    it('executes buyback if no JDFI trades have taken place over the last 5 minutes', async function () {
+      while (new Date(await time.latest() * 1000).getUTCDay() !== 5) {
+        await time.increase(60 * 60 * 24);
+      }
+
+      await instance.vote(true, { from: NOBODY, value: new BN(web3.utils.toWei('1')) });
+
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+
+      let wethAddress = await router.WETH.call();
+      let weth = await IERC20.at(wethAddress);
+
+      let balance = await weth.balanceOf.call(await jusdefi._uniswapPair.call());
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [wethAddress, jusdefi.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value: balance.div(new BN(10000)) }
+      );
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [wethAddress, jusdefi.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value: balance.div(new BN(10)) }
+      );
+
+
+      await time.increase(60 * 6);
+
+      // no revert
+      await instance.buyback();
+    });
+
+    it('executes buyback if JDFI trades have taken place over the last 5 minutes and price slippage is not too high', async function () {
+      while (new Date(await time.latest() * 1000).getUTCDay() !== 5) {
+        await time.increase(60 * 60 * 24);
+      }
+
+      await instance.vote(true, { from: NOBODY, value: new BN(web3.utils.toWei('1')) });
+
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+
+      let wethAddress = await router.WETH.call();
+      let weth = await IERC20.at(wethAddress);
+
+      let value = (await weth.balanceOf.call(await jusdefi._uniswapPair.call())).div(new BN(10));
+
+      await router.swapExactETHForTokens(
+        new BN(0),
+        [wethAddress, jusdefi.address],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY, value }
+      );
+
+      await router.swapExactTokensForETH(
+        await jusdefi.balanceOf.call(NOBODY),
+        new BN(0),
+        [jusdefi.address, wethAddress],
+        NOBODY,
+        constants.MAX_UINT256,
+        { from: NOBODY }
+      );
+
+      await time.increase(60 * 4);
+
+      // no revert
+      await instance.buyback();
+    });
+
     describe('reverts if', function () {
       it('date is not Friday (UTC)', async function () {
         if (new Date(await time.latest() * 1000).getUTCDay() === 5) {
@@ -199,6 +274,42 @@ contract('FeePool', function (accounts) {
         await expectRevert(
           instance.buyback(),
           'JusDeFi: buyback already called this week'
+        );
+      });
+
+      it('price slippage is too high', async function () {
+        while (new Date(await time.latest() * 1000).getUTCDay() !== 5) {
+          await time.increase(60 * 60 * 24);
+        }
+
+        await instance.vote(true, { from: NOBODY, value: new BN(web3.utils.toWei('1')) });
+
+        let router = await IUniswapV2Router02.at(uniswapRouter);
+
+        let wethAddress = await router.WETH.call();
+        let weth = await IERC20.at(wethAddress);
+
+        let balance = await weth.balanceOf.call(await jusdefi._uniswapPair.call());
+
+        await router.swapExactETHForTokens(
+          new BN(0),
+          [wethAddress, jusdefi.address],
+          NOBODY,
+          constants.MAX_UINT256,
+          { from: NOBODY, value: balance.div(new BN(10000)) }
+        );
+
+        await router.swapExactETHForTokens(
+          new BN(0),
+          [wethAddress, jusdefi.address],
+          NOBODY,
+          constants.MAX_UINT256,
+          { from: NOBODY, value: balance.div(new BN(10)) }
+        );
+
+        await expectRevert(
+          instance.buyback(),
+          'JusDeFi: buyback price slippage too high'
         );
       });
     });
