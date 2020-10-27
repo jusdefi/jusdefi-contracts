@@ -308,6 +308,28 @@ contract('FeePool', function (accounts) {
       assert((await instance._votesDecrease.call()).isZero());
     });
 
+    it('distributes no JDFI if staking pools are empty', async function () {
+      let jdfiStakingPool = await JDFIStakingPool.at(await jusdefi._jdfiStakingPool.call());
+      let univ2StakingPool = await UNIV2StakingPool.at(await jusdefi._univ2StakingPool.call());
+
+      while (new Date(await time.latest() * 1000).getUTCDay() !== 0) {
+        await time.increase(60 * 60 * 24);
+      }
+
+      await jdfiStakingPool.unstake(await jdfiStakingPool.balanceOf.call(DEPLOYER), { from: DEPLOYER });
+      await jdfiStakingPool.unstake(await jdfiStakingPool.balanceOf.call(DEPOSITORS[0]), { from: DEPOSITORS[0] });
+
+      assert((await jdfiStakingPool.totalSupply.call()).isZero());
+      assert((await univ2StakingPool.totalSupply.call()).isZero());
+
+      let initialBalance = await jusdefi.balanceOf.call(instance.address);
+      await instance.rebase();
+      let finalBalance = await jusdefi.balanceOf.call(instance.address);
+
+      assert(!initialBalance.isZero());
+      assert(initialBalance.eq(finalBalance));
+    });
+
     describe('reverts if', function () {
       it('date is not Sunday (UTC)', async function () {
         if (new Date(await time.latest() * 1000).getUTCDay() === 0) {

@@ -139,22 +139,23 @@ contract FeePool {
     IUniswapV2Pair(_uniswapPair).skim(address(this));
     uint rewards = IJusDeFi(_jusdefi).balanceOf(address(this));
 
-    // TODO: zero-division
-
     uint jdfiStakingPoolStaked = IERC20(_jdfiStakingPool).totalSupply();
     uint univ2StakingPoolStaked = IJusDeFi(_jusdefi).balanceOf(_uniswapPair) * IERC20(_univ2StakingPool).totalSupply() / IUniswapV2Pair(_uniswapPair).totalSupply();
 
-    uint totalWeight = jdfiStakingPoolStaked + univ2StakingPoolStaked * 3;
+    uint weight = jdfiStakingPoolStaked + univ2StakingPoolStaked * 3;
 
-    uint jdfiStakingPoolRewards = rewards * jdfiStakingPoolStaked / totalWeight;
-    uint univ2StakingPoolRewards = rewards - jdfiStakingPoolRewards;
+    // if weight is zero, staked amounts are also zero, avoiding zero-division error
 
-    if (jdfiStakingPoolRewards > 0) {
-      IStakingPool(_jdfiStakingPool).distributeRewards(jdfiStakingPoolRewards);
+    if (jdfiStakingPoolStaked > 0) {
+      IStakingPool(_jdfiStakingPool).distributeRewards(
+        rewards * jdfiStakingPoolStaked / weight
+      );
     }
 
-    if (univ2StakingPoolRewards > 0) {
-      IStakingPool(_univ2StakingPool).distributeRewards(univ2StakingPoolRewards);
+    if (univ2StakingPoolStaked > 0) {
+      IStakingPool(_univ2StakingPool).distributeRewards(
+        rewards * univ2StakingPoolStaked * 3 / weight
+      );
     }
 
     // set fee for the next week
