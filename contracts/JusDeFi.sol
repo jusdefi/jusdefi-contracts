@@ -33,6 +33,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   address public _jdfiStakingPool;
   address public _univ2StakingPool;
 
+  uint private constant LIQUIDITY_EVENT_PERIOD = 4 days;
   bool public _liquidityEventOpen;
   uint public _liquidityEventClosedAt;
 
@@ -81,7 +82,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
     // transfer team reserve and justice reserve to sender for distribution
     IStakingPool(_jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
-    _liquidityEventClosedAt = block.timestamp + 3 days;
+    _liquidityEventClosedAt = block.timestamp + LIQUIDITY_EVENT_PERIOD;
     _liquidityEventOpen = true;
 
     // enable trusted addresses to transfer tokens without approval
