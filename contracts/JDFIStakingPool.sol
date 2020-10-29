@@ -14,7 +14,7 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   using Address for address payable;
 
   address private _jusdefi;
-  address payable private _weth;
+  address private _weth;
   address private _devStakingPool;
 
   mapping (address => uint) private _lockedBalances;
@@ -23,7 +23,7 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
 
   constructor (
     uint initialSupply,
-    address payable weth,
+    address weth,
     address devStakingPool
   ) ERC20('Staked JDFI', 'JDFI/S') {
     _jusdefi = msg.sender;

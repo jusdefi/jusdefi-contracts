@@ -23,9 +23,9 @@ contract JusDeFi is IJusDeFi, ERC20 {
   using FixedPoint for FixedPoint.uq144x112;
   using SafeMath for uint;
 
-  address payable private _weth;
+  address private _weth;
 
-  address payable private _uniswapRouter;
+  address private _uniswapRouter;
   address public _uniswapPair;
 
   address payable override public _feePool;
@@ -53,11 +53,11 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint32 private _blockTimestampLast;
 
   constructor (
-    address payable uniswapRouter
+    address uniswapRouter
   )
     ERC20('JusDeFi', 'JDFI')
   {
-    address payable weth = payable(IUniswapV2Router02(uniswapRouter).WETH());
+    address weth = IUniswapV2Router02(uniswapRouter).WETH();
     _weth = weth;
 
     address uniswapPair = IUniswapV2Factory(

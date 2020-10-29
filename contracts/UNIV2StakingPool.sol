@@ -15,11 +15,11 @@ contract UNIV2StakingPool is StakingPool {
 
   address private _jusdefi;
   address private _uniswapPair;
-  address payable private _uniswapRouter;
+  address private _uniswapRouter;
 
   constructor (
     address uniswapPair,
-    address payable uniswapRouter
+    address uniswapRouter
   )
     ERC20('Staked JDFI/WETH UNI-V2', 'JDFI-WETH-UNI-V2/S')
   {

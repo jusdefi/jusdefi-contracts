@@ -13,7 +13,7 @@ import './interfaces/IStakingPool.sol';
 contract FeePool {
   address private _jusdefi;
 
-  address payable private _uniswapRouter;
+  address private _uniswapRouter;
   address private _uniswapPair;
 
   address public _jdfiStakingPool;
@@ -40,7 +40,7 @@ contract FeePool {
   constructor (
     address jdfiStakingPool,
     address univ2StakingPool,
-    address payable uniswapRouter,
+    address uniswapRouter,
     address uniswapPair
   ) {
     _jusdefi = msg.sender;
