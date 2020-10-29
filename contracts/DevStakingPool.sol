@@ -3,14 +3,10 @@
 pragma solidity ^0.7.0;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@uniswap/v2-periphery/contracts/interfaces/IWETH.sol';
 
 import './StakingPool.sol';
 
 contract DevStakingPool is StakingPool {
-  using Address for address payable;
-
   address private _weth;
 
   constructor (address weth) ERC20('JDFI ETH Fund', 'JDFI/E') {
