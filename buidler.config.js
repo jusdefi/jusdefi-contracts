@@ -1,4 +1,5 @@
 usePlugin('@nomiclabs/buidler-truffle5');
+usePlugin('buidler-abi-exporter');
 usePlugin('buidler-gas-reporter');
 usePlugin('buidler-spdx-license-identifier');
 usePlugin('solidity-coverage');
@@ -26,6 +27,16 @@ module.exports = {
         mnemonic: `${ process.env.MNEMONIC }`,
       },
     },
+  },
+
+  abiExporter: {
+    clear: true,
+    only: [
+      'JusDeFi',
+      'FeePool',
+      'JDFIStakingPool',
+      'UNIV2StakingPool',
+    ],
   },
 
   gasReporter: {

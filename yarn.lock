@@ -1234,6 +1234,11 @@ bufferutil@^4.0.1:
   dependencies:
     node-gyp-build "~3.7.0"
 
+buidler-abi-exporter@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/buidler-abi-exporter/-/buidler-abi-exporter-1.0.1.tgz#45ed6863318d31c8795cb681ec84b8bdf99b6cd0"
+  integrity sha512-LeIX79h2rx6DEbLjHFjB7JYMdRaUTZvH3KyWKEeFmVAdqStA1J4NWcEjlF78lBPB6U5pWFKEQR0a4g67lTmDeQ==
+
 buidler-gas-reporter@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/buidler-gas-reporter/-/buidler-gas-reporter-0.1.4.tgz#912108192e91360deb3f79b3840d0f50c35b4f08"
