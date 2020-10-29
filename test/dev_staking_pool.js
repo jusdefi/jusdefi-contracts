@@ -58,14 +58,17 @@ contract('DevStakingPool', function (accounts) {
         await instance.transfer(recipient, amount, { from: DEPLOYER });
       }
 
-      let amount = new BN(web3.utils.toWei('10'));
+      let amount = new BN((await instance.totalSupply.call()).div(new BN(1000)));
       await instance.distributeRewards(amount, { from: NOBODY });
 
       for (let recipient of [...RECIPIENTS, DEPLOYER]) {
+        let initialWethBalance = await weth.balanceOf.call(recipient);
         await instance.withdraw({ from: recipient });
-        let wethBalance = await weth.balanceOf.call(recipient);
+        let finalWethBalance = await weth.balanceOf.call(recipient);
+
+        let deltaWethBalance = finalWethBalance.sub(initialWethBalance);
         let tokenBalance = await instance.balanceOf.call(recipient);
-        assert(wethBalance.eq(tokenBalance.div(new BN(1000))));
+        assert(deltaWethBalance.eq(tokenBalance.div(new BN(1000))));
       }
     });
 
