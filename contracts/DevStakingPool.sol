@@ -11,9 +11,9 @@ import './StakingPool.sol';
 contract DevStakingPool is StakingPool {
   using Address for address payable;
 
-  address payable private _weth;
+  address private _weth;
 
-  constructor (address payable weth) ERC20('JDFI ETH Fund', 'JDFI/E') {
+  constructor (address weth) ERC20('JDFI ETH Fund', 'JDFI/E') {
     _weth = weth;
     _mint(msg.sender, 10000 ether);
   }

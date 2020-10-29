@@ -6,7 +6,7 @@ import '../JusDeFi.sol';
 import '../interfaces/IStakingPool.sol';
 
 contract JusDeFiMock is JusDeFi {
-  constructor (address payable uniswapRouter) JusDeFi(uniswapRouter) {}
+  constructor (address uniswapRouter) JusDeFi(uniswapRouter) {}
 
   function mint (address account, uint amount) external {
     _mint(account, amount);
