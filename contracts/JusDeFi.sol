@@ -23,19 +23,21 @@ contract JusDeFi is IJusDeFi, ERC20 {
   using FixedPoint for FixedPoint.uq144x112;
   using SafeMath for uint;
 
+  // _weth and _uniswapPair cannot be immutable because they are referenced in _beforeTokenTransfer
+
   address private _weth;
 
-  address private _uniswapRouter;
+  address private immutable _uniswapRouter;
   address public _uniswapPair;
 
   address payable override public _feePool;
-  address public _devStakingPool;
-  address public _jdfiStakingPool;
-  address public _univ2StakingPool;
+  address public immutable _devStakingPool;
+  address public immutable _jdfiStakingPool;
+  address public immutable _univ2StakingPool;
 
   uint private constant LIQUIDITY_EVENT_PERIOD = 4 days;
   bool public _liquidityEventOpen;
-  uint public _liquidityEventClosedAt;
+  uint public immutable _liquidityEventClosedAt;
 
   mapping (address => bool) private _transferWhitelist;
 
@@ -69,25 +71,28 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
     uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
 
-    _devStakingPool = address(new DevStakingPool(weth));
-    _jdfiStakingPool = address(new JDFIStakingPool(initialStake, weth, _devStakingPool));
-    _univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
+    address devStakingPool = address(new DevStakingPool(weth));
+    _devStakingPool = devStakingPool;
+    address jdfiStakingPool = address(new JDFIStakingPool(initialStake, weth, devStakingPool));
+    _jdfiStakingPool = jdfiStakingPool;
+    address univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
+    _univ2StakingPool = univ2StakingPool;
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
-    _mint(_jdfiStakingPool, initialStake);
+    _mint(jdfiStakingPool, initialStake);
 
     // transfer all minted JDFI/E to sender
-    IStakingPool(_devStakingPool).transfer(msg.sender, IStakingPool(_devStakingPool).balanceOf(address(this)));
+    IStakingPool(devStakingPool).transfer(msg.sender, IStakingPool(devStakingPool).balanceOf(address(this)));
 
     // transfer team reserve and justice reserve to sender for distribution
-    IStakingPool(_jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
+    IStakingPool(jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
     _liquidityEventClosedAt = block.timestamp + LIQUIDITY_EVENT_PERIOD;
     _liquidityEventOpen = true;
 
     // enable trusted addresses to transfer tokens without approval
-    _transferWhitelist[_jdfiStakingPool] = true;
-    _transferWhitelist[_univ2StakingPool] = true;
+    _transferWhitelist[jdfiStakingPool] = true;
+    _transferWhitelist[univ2StakingPool] = true;
     _transferWhitelist[uniswapRouter] = true;
   }
 

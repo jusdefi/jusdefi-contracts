@@ -7,7 +7,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './StakingPool.sol';
 
 contract DevStakingPool is StakingPool {
-  address private _weth;
+  address private immutable _weth;
 
   constructor (address weth) ERC20('JDFI ETH Fund', 'JDFI/E') {
     _weth = weth;

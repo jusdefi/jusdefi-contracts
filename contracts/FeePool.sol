@@ -11,13 +11,13 @@ import './interfaces/IJusDeFi.sol';
 import './interfaces/IStakingPool.sol';
 
 contract FeePool {
-  address private _jusdefi;
+  address private immutable _jusdefi;
 
-  address private _uniswapRouter;
-  address private _uniswapPair;
+  address private immutable _uniswapRouter;
+  address private immutable _uniswapPair;
 
-  address public _jdfiStakingPool;
-  address public _univ2StakingPool;
+  address public immutable _jdfiStakingPool;
+  address public immutable _univ2StakingPool;
 
   // fee specified in basis points
   uint public _fee; // initialized at 0; not set until #liquidityEventClose
