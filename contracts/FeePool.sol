@@ -29,7 +29,7 @@ contract FeePool {
 
   uint private constant UNIV2_STAKING_MULTIPLIER = 3;
 
-  uint private _initialUniTotalSupply;
+  uint private immutable _initialUniTotalSupply;
 
   uint public _votesIncrease;
   uint public _votesDecrease;
