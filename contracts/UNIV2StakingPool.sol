@@ -13,9 +13,9 @@ import './StakingPool.sol';
 contract UNIV2StakingPool is StakingPool {
   using Address for address payable;
 
-  address private _jusdefi;
-  address private _uniswapPair;
-  address private _uniswapRouter;
+  address private immutable _jusdefi;
+  address private immutable _uniswapPair;
+  address private immutable _uniswapRouter;
 
   constructor (
     address uniswapPair,

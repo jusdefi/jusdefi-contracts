@@ -13,9 +13,9 @@ import './StakingPool.sol';
 contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   using Address for address payable;
 
-  address private _jusdefi;
-  address private _weth;
-  address private _devStakingPool;
+  address private immutable _jusdefi;
+  address private immutable _weth;
+  address private immutable _devStakingPool;
 
   mapping (address => uint) private _lockedBalances;
 
@@ -34,7 +34,7 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
     _mint(msg.sender, initialSupply);
 
     // approve devStakingPool to spend WETH
-    IERC20(weth).approve(_devStakingPool, type(uint).max);
+    IERC20(weth).approve(devStakingPool, type(uint).max);
   }
 
   /**
