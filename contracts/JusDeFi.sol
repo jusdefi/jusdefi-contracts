@@ -35,7 +35,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   address public immutable _jdfiStakingPool;
   address public immutable _univ2StakingPool;
 
-  uint private constant LIQUIDITY_EVENT_PERIOD = 4 days;
+  uint private constant LIQUIDITY_EVENT_PERIOD = 3 days;
   bool public _liquidityEventOpen;
   uint public immutable _liquidityEventClosedAt;
 
