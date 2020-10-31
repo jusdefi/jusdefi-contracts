@@ -1,25 +1,26 @@
-usePlugin('@nomiclabs/buidler-truffle5');
-usePlugin('buidler-abi-exporter');
-usePlugin('buidler-gas-reporter');
-usePlugin('buidler-spdx-license-identifier');
-usePlugin('solidity-coverage');
-
-// increased timeout required for ganache --fork mode
-const TIMEOUT = 60 * 60 * 1000;
+require('@nomiclabs/hardhat-truffle5');
+require('hardhat-abi-exporter');
+require('hardhat-gas-reporter');
+require('hardhat-spdx-license-identifier');
 
 module.exports = {
-  solc: {
+  solidity: {
     version: '0.7.4',
-    optimizer: {
-      enabled: true,
-      runs: 200,
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
 
   networks: {
-    localhost: {
-      timeout: TIMEOUT,
+    hardhat: {
+      forking: {
+        url: `${ process.env.FORK_URL }`,
+      },
     },
+
     generic: {
       // set URL for external network, such as Infura
       url: `${ process.env.URL }`,
@@ -31,6 +32,7 @@ module.exports = {
 
   abiExporter: {
     clear: true,
+    flat: true,
     only: [
       'JusDeFi',
       'FeePool',
@@ -40,8 +42,7 @@ module.exports = {
   },
 
   gasReporter: {
-    enabled: !!process.env.REPORT_GAS,
-    gasPrice: 1,
+    enabled: process.env.REPORT_GAS === 'true',
   },
 
   spdxLicenseIdentifier: {
@@ -50,6 +51,6 @@ module.exports = {
   },
 
   mocha: {
-    timeout: TIMEOUT,
+    timeout: 60 * 60 * 1000,
   },
 };

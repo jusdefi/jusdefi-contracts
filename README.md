@@ -12,44 +12,32 @@ Install dependencies via Yarn:
 yarn install
 ```
 
-Compile contracts via Buidler:
+Compile contracts via Hardhat:
 
 ```bash
-yarn run buidler compile
+yarn run hardhat compile
 ```
 
 ### Networks
 
-By default, Buidler uses the BuidlerEVM.
-
-To use Ganache, append commands with `--network localhost`, after having started `ganache-cli` in a separate process:
-
-```bash
-yarn run ganache-cli
-```
+By default, Hardhat uses the Hardhat Network in-process.
 
 To use an external network via URL, set the `URL` environment variable and append commands with `--network generic`:
 
 ```bash
-URL="https://mainnet.infura.io/v3/[INFURA_KEY]" yarn run buidler test --network generic
+URL="[NODE_URL]" yarn run hardhat test --network generic
 ```
 
 ### Testing
 
-Test contracts via Buidler:
+To test the contracts via Hardhat, specify a URL from which to fork the mainnet by setting the `FORK_URL` environment variable:
 
 ```bash
-yarn run buidler test
+FORK_URL="[NODE_URL]" yarn run hardhat test
 ```
 
-If using a supported network (such as Ganache), activate gas usage reporting by setting the `REPORT_GAS` environment variable to `true`:
+Activate gas usage reporting by setting the `REPORT_GAS` environment variable to `"true"`:
 
 ```bash
-REPORT_GAS=true yarn run buidler test --network localhost
-```
-
-Generate a code coverage report for Solidity contracts:
-
-```bash
-yarn run buidler coverage
+REPORT_GAS=true yarn run hardhat test
 ```
