@@ -2,8 +2,6 @@
 
 Transparent re-implementation of AMPLYFI.
 
-This repository was generated from a template or is the template itself.  For more information, see [docs/TEMPLATE.md](./docs/TEMPLATE.md).
-
 ## Development
 
 Install dependencies via Yarn:
