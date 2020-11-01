@@ -11,6 +11,7 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
+const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
@@ -22,11 +23,14 @@ const IERC20 = artifacts.require('IERC20');
 contract('FeePool', function (accounts) {
   const [NOBODY, DEPLOYER, ...DEPOSITORS] = accounts;
 
+  let airdropToken;
   let jusdefi;
   let instance;
 
   beforeEach(async function () {
-    jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    airdropToken = await AirdropToken.new({ from: DEPLOYER });
+    jusdefi = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
+    await airdropToken.setJDFIStakingPool(await jusdefi._jdfiStakingPool.call(), { from: DEPLOYER });
 
     await time.increaseTo(await jusdefi._liquidityEventClosedAt.call());
     await jusdefi.liquidityEventDeposit({ from: DEPOSITORS[0], value: new BN(web3.utils.toWei('1')) });

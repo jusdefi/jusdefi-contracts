@@ -3,7 +3,6 @@ const {
   balance,
   constants,
   time,
-  expectEvent,
   expectRevert,
 } = require('@openzeppelin/test-helpers');
 
@@ -11,6 +10,7 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
+const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
@@ -22,12 +22,15 @@ contract('JDFIStakingPool', function (accounts) {
 
   const BP_DIVISOR = new BN(10000);
 
+  let airdropToken;
   let jusdefi;
   let instance;
 
   beforeEach(async function () {
-    jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    airdropToken = await AirdropToken.new({ from: DEPLOYER });
+    jusdefi = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
     instance = await JDFIStakingPool.at(await jusdefi._jdfiStakingPool.call());
+    await airdropToken.setJDFIStakingPool(instance.address, { from: DEPLOYER });
 
     // close liquidity event
 
@@ -60,7 +63,8 @@ contract('JDFIStakingPool', function (accounts) {
     describe('reverts if', function () {
       it('transfer amount exceeds unlocked balance', async function () {
         let amount = new BN(1);
-        await instance.airdropLocked([NOBODY], [amount], { from: DEPLOYER });
+        await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
+        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
         await expectRevert(
           instance.transfer(NOBODY, amount, { from: NOBODY }),
@@ -74,7 +78,8 @@ contract('JDFIStakingPool', function (accounts) {
     describe('reverts if', function () {
       it('transfer amount exceeds unlocked balance', async function () {
         let amount = new BN(web3.utils.toWei('1'));
-        await instance.airdropLocked([NOBODY], [amount], { from: DEPLOYER });
+        await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
+        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
         await expectRevert(
           instance.transferFrom(NOBODY, NOBODY, amount, { from: NOBODY }),
@@ -87,7 +92,8 @@ contract('JDFIStakingPool', function (accounts) {
   describe('#lockedBalanceOf', function () {
     it('returns locked balance of given account', async function () {
       let amount = new BN(web3.utils.toWei('1'));
-      await instance.airdropLocked([NOBODY], [amount], { from: DEPLOYER });
+      await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
+      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
       assert((await instance.lockedBalanceOf.call(NOBODY)).eq(amount));
     });
@@ -211,7 +217,8 @@ contract('JDFIStakingPool', function (accounts) {
   describe('#unlock', function () {
     it('unlocks tokens in exchange for ETH at a ratio of 4:1', async function () {
       let value = new BN(web3.utils.toWei('1'));
-      await instance.airdropLocked([NOBODY], [value.mul(new BN(4))], { from: DEPLOYER });
+      await airdropToken.transfer(NOBODY, value.mul(new BN(4)), { from: DEPLOYER });
+      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
       await instance.unlock({ from: NOBODY, value });
 
@@ -220,7 +227,8 @@ contract('JDFIStakingPool', function (accounts) {
 
     it('distributes ETH in equal parts to Fee Pool and Dev Staking Pool', async function () {
       let value = new BN(web3.utils.toWei('1'));
-      await instance.airdropLocked([NOBODY], [value.mul(new BN(4))], { from: DEPLOYER });
+      await airdropToken.transfer(NOBODY, value.mul(new BN(4)), { from: DEPLOYER });
+      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
       await instance.unlock({ from: NOBODY, value });
 
@@ -233,8 +241,10 @@ contract('JDFIStakingPool', function (accounts) {
 
     describe('reverts if', function () {
       it('liquidity event is still in progress', async function () {
-        let jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+        let airdropToken = await AirdropToken.new({ from: DEPLOYER });
+        let jusdefi = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
         let instance = await JDFIStakingPool.at(await jusdefi._jdfiStakingPool.call());
+        await airdropToken.setJDFIStakingPool(instance.address, { from: DEPLOYER });
 
         await expectRevert(
           instance.unlock(),
@@ -248,7 +258,8 @@ contract('JDFIStakingPool', function (accounts) {
           'JusDeFi: insufficient locked balance'
         );
 
-        await instance.airdropLocked([NOBODY], [new BN(7)], { from: DEPLOYER });
+        await airdropToken.transfer(NOBODY, new BN(7), { from: DEPLOYER });
+        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
 
         await expectRevert(
           instance.unlock({ from: NOBODY, value: new BN(2) }),
@@ -271,61 +282,6 @@ contract('JDFIStakingPool', function (accounts) {
       assert(!(await instance.rewardsOf.call(account)).isZero());
 
       assert((await jusdefi.balanceOf.call(account)).isZero());
-    });
-  });
-
-  describe('#airdropLocked', function () {
-    let amounts;
-    let sum;
-
-    before(async function () {
-      amounts = RECIPIENTS.map((el, i) => new BN(web3.utils.toWei((i + 1).toString())));
-      sum = amounts.reduce((acc, cur) => acc.add(cur), new BN(0));
-    });
-
-    it('emits Transfer events', async function () {
-      let tx = await instance.airdropLocked(RECIPIENTS, amounts, { from: DEPLOYER });
-
-      for (let i = 0; i < RECIPIENTS.length; i++) {
-        expectEvent(tx, 'Transfer', { from: constants.ZERO_ADDRESS, to: RECIPIENTS[i], value: amounts[i] });
-      }
-
-      expectEvent(tx, 'Transfer', { from: DEPLOYER, to: constants.ZERO_ADDRESS, value: sum });
-    });
-
-    it('decreases sender balance by transfer amount', async function () {
-      let initialBalance = await instance.balanceOf(DEPLOYER);
-      await instance.airdropLocked(RECIPIENTS, amounts, { from: DEPLOYER });
-      let finalBalance = await instance.balanceOf(DEPLOYER);
-
-      assert(initialBalance.sub(sum).eq(finalBalance));
-    });
-
-    it('increases recipient balances and locked balances by individual transfer amounts', async function () {
-      let initialBalances = [];
-
-      for (let recipient of RECIPIENTS) {
-        initialBalances.push(await instance.balanceOf.call(recipient));
-        assert((await instance.lockedBalanceOf.call(recipient)).isZero());
-      }
-
-      await instance.airdropLocked(RECIPIENTS, amounts, { from: DEPLOYER });
-
-      for (let i = 0; i < RECIPIENTS.length; i++) {
-        let finalBalance = await instance.balanceOf.call(RECIPIENTS[i]);
-        let delta = finalBalance.sub(initialBalances[i]);
-        assert(delta.eq(amounts[i]));
-        assert((await instance.lockedBalanceOf.call(RECIPIENTS[i])).eq(delta));
-      }
-    });
-
-    describe('reverts if', function () {
-      it('input array lengths do not match', async function () {
-        await expectRevert(
-          instance.airdropLocked([NOBODY, NOBODY], [new BN(0)], { from: DEPLOYER }),
-          'JusDeFi: array lengths do not match'
-        );
-      });
     });
   });
 });

@@ -3,6 +3,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "airdropToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "uniswapRouter",
         "type": "address"
       }

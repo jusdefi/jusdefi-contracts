@@ -9,6 +9,7 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
+const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
@@ -22,6 +23,7 @@ contract('JusDeFi', function (accounts) {
 
   const BP_DIVISOR = new BN(10000);
 
+  let airdropToken;
   let instance;
   let devStakingPool;
   let jdfiStakingPool;
@@ -34,10 +36,12 @@ contract('JusDeFi', function (accounts) {
   };
 
   beforeEach(async function () {
-    instance = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    airdropToken = await AirdropToken.new({ from: DEPLOYER });
+    instance = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
     devStakingPool = await DevStakingPool.at(await instance._devStakingPool.call());
     jdfiStakingPool = await JDFIStakingPool.at(await instance._jdfiStakingPool.call());
     univ2StakingPool = await UNIV2StakingPool.at(await instance._univ2StakingPool.call());
+    await airdropToken.setJDFIStakingPool(jdfiStakingPool.address, { from: DEPLOYER });
   });
 
   describe('constructor', function () {
@@ -49,13 +53,18 @@ contract('JusDeFi', function (accounts) {
       assert.notEqual(univ2StakingPool.address, constants.ZERO_ADDRESS);
     });
 
-    it('mints and stakes team reserve and justice reserve and transfers to sender', async function () {
+    it('mints and stakes team reserve and transfers to sender', async function () {
       let balance = await jdfiStakingPool.balanceOf.call(DEPLOYER);
-      assert(balance.eq(new BN(web3.utils.toWei('12000'))));
+      assert(balance.eq(new BN(web3.utils.toWei('2000'))));
     });
 
     it('mints and stakes liquidity event reserve', async function () {
       let balance = await jdfiStakingPool.balanceOf.call(instance.address);
+      assert(balance.eq(new BN(web3.utils.toWei('10000'))));
+    });
+
+    it('mints justice reserve', async function () {
+      let balance = await instance.balanceOf.call(airdropToken.address);
       assert(balance.eq(new BN(web3.utils.toWei('10000'))));
     });
 

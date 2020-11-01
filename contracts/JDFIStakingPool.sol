@@ -14,6 +14,8 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   using Address for address payable;
 
   address private immutable _jusdefi;
+  // _airdropToken cannot be immutable because it is referenced in _beforeTokenTransfer
+  address private _airdropToken;
   address private immutable _weth;
   address private immutable _devStakingPool;
 
@@ -22,11 +24,13 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   uint private constant JDFI_PER_ETH = 4;
 
   constructor (
+    address airdropToken,
     uint initialSupply,
     address weth,
     address devStakingPool
   ) ERC20('Staked JDFI', 'JDFI/S') {
     _jusdefi = msg.sender;
+    _airdropToken = airdropToken;
     _weth = weth;
     _devStakingPool = devStakingPool;
 
@@ -59,7 +63,7 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
    * @notice deposit and stake JDFI
    * @param amount quantity of JDFI to stake
    */
-  function stake (uint amount) external {
+  function stake (uint amount) override external {
     IJusDeFi(_jusdefi).transferFrom(msg.sender, address(this), amount);
     _mint(msg.sender, amount);
   }
@@ -112,28 +116,6 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
   }
 
   /**
-   * @notice airdrop locked tokens to given accounts in given quantities
-   * @dev _mint and _burn are used in place of _transfer due to gas considerations
-   * @param accounts airdrop recipients
-   * @param amounts airdrop quantities
-   */
-  function airdropLocked (address[] calldata accounts, uint[] calldata amounts) external {
-    require(accounts.length == amounts.length, 'JusDeFi: array lengths do not match');
-
-    uint length = accounts.length;
-    uint initialSupply = totalSupply();
-
-    for (uint i; i < length; i++) {
-      address account = accounts[i];
-      uint amount = amounts[i];
-      _mint(account, amount);
-      _lockedBalances[account] += amount;
-    }
-
-    _burn(msg.sender, totalSupply() - initialSupply);
-  }
-
-  /**
    * @notice OpenZeppelin ERC20 hook: prevent transfer of locked tokens
    * @param from sender
    * @param to recipient
@@ -148,5 +130,9 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
       locked == 0 || balanceOf(from) - locked >= amount,
       'JusDeFi: amount exceeds unlocked balance'
     );
+
+    if (from == _airdropToken) {
+      _lockedBalances[to] += amount;
+    }
   }
 }

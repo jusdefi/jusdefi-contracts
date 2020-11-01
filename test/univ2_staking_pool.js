@@ -11,6 +11,7 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
+const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
@@ -22,6 +23,7 @@ contract('UNIV2StakingPool', function (accounts) {
 
   const BP_DIVISOR = new BN(10000);
 
+  let airdropToken;
   let jusdefi;
   let instance;
 
@@ -40,7 +42,9 @@ contract('UNIV2StakingPool', function (accounts) {
   };
 
   beforeEach(async function () {
-    jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    airdropToken = await AirdropToken.new({ from: DEPLOYER });
+    jusdefi = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
+    await airdropToken.setJDFIStakingPool(await jusdefi._jdfiStakingPool.call(), { from: DEPLOYER });
     instance = await UNIV2StakingPool.at(await jusdefi._univ2StakingPool.call());
 
     // close liquidity event

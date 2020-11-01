@@ -8,6 +8,7 @@ const {
   uniswapRouter,
 } = require('../data/addresses.js');
 
+const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const DevStakingPool = artifacts.require('DevStakingPool');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
@@ -17,6 +18,7 @@ const IWETH = artifacts.require('IWETH');
 contract('DevStakingPool', function (accounts) {
   const [NOBODY, DEPLOYER, ...RECIPIENTS] = accounts;
 
+  let airdropToken;
   let jusdefi;
   let instance;
   let weth;
@@ -29,8 +31,10 @@ contract('DevStakingPool', function (accounts) {
   });
 
   beforeEach(async function () {
-    jusdefi = await JusDeFi.new(uniswapRouter, { from: DEPLOYER });
+    airdropToken = await AirdropToken.new({ from: DEPLOYER });
+    jusdefi = await JusDeFi.new(airdropToken.address, uniswapRouter, { from: DEPLOYER });
     instance = await DevStakingPool.at(await jusdefi._devStakingPool.call());
+    await airdropToken.setJDFIStakingPool(await jusdefi._jdfiStakingPool.call(), { from: DEPLOYER });
 
     let router = await IUniswapV2Router02.at(uniswapRouter);
     weth = await IERC20.at(await router.WETH.call());

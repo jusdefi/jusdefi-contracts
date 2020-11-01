@@ -34,6 +34,7 @@ module.exports = {
     clear: true,
     flat: true,
     only: [
+      'AirdropToken',
       'JusDeFi',
       'FeePool',
       'JDFIStakingPool',

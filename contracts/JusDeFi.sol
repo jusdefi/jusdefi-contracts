@@ -24,9 +24,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   using SafeMath for uint;
 
   // _weth and _uniswapPair cannot be immutable because they are referenced in _beforeTokenTransfer
-
   address private _weth;
-
   address private immutable _uniswapRouter;
   address public _uniswapPair;
 
@@ -55,6 +53,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   uint32 private _blockTimestampLast;
 
   constructor (
+    address airdropToken,
     address uniswapRouter
   )
     ERC20('JusDeFi', 'JDFI')
@@ -69,17 +68,20 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _uniswapRouter = uniswapRouter;
     _uniswapPair = uniswapPair;
 
-    uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_JUSTICE + RESERVE_TEAM;
+    uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_TEAM;
 
     address devStakingPool = address(new DevStakingPool(weth));
     _devStakingPool = devStakingPool;
-    address jdfiStakingPool = address(new JDFIStakingPool(initialStake, weth, devStakingPool));
+    address jdfiStakingPool = address(new JDFIStakingPool(airdropToken, initialStake, weth, devStakingPool));
     _jdfiStakingPool = jdfiStakingPool;
     address univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
     _univ2StakingPool = univ2StakingPool;
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
     _mint(jdfiStakingPool, initialStake);
+
+    // mint JDFI for conversion to locked JDFI/S
+    _mint(airdropToken, RESERVE_JUSTICE);
 
     // transfer all minted JDFI/E to sender
     IStakingPool(devStakingPool).transfer(msg.sender, IStakingPool(devStakingPool).balanceOf(address(this)));
@@ -111,10 +113,10 @@ contract JusDeFi is IJusDeFi, ERC20 {
   }
 
   /**
-  * @notice OpenZeppelin ERC20#transferFrom: enable transfers by staking pools without allowance
-  * @param from sender
-  * @param to recipient
-  * @param amount quantity transferred
+   * @notice OpenZeppelin ERC20#transferFrom: enable transfers by staking pools without allowance
+   * @param from sender
+   * @param to recipient
+   * @param amount quantity transferred
    */
   function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
     if (_transferWhitelist[msg.sender]) {
