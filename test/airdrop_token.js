@@ -32,6 +32,18 @@ contract('AirdropToken', function (accounts) {
     });
   });
 
+  describe('#name', function () {
+    it('returns "JusDeFi Airdrop"', async function () {
+      assert.equal(await instance.name.call(), 'JusDeFi Airdrop');
+    });
+  });
+
+  describe('#symbol', function () {
+    it('returns "JDFI/A"', async function () {
+      assert.equal(await instance.symbol.call(), 'JDFI/A');
+    });
+  });
+
   describe('#setJDFIStakingPool', function () {
     describe('reverts if', function () {
       it('sender is not deployer', async function () {
