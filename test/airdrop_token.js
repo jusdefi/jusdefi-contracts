@@ -28,7 +28,7 @@ contract('AirdropToken', function (accounts) {
   describe('constructor', function () {
     it('mints quanity corresponding to justice reserve for sender', async function () {
       let balance = await instance.balanceOf.call(DEPLOYER);
-      assert(balance.eq(new BN(web3.utils.toWei('10000'))));
+      assert(balance.eq(new BN(web3.utils.toWei('10020'))));
     });
   });
 

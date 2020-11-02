@@ -12,7 +12,7 @@ contract AirdropToken is ERC20 {
 
   constructor () ERC20('JusDeFi Airdrop', 'JDFI/A') {
     _deployer = msg.sender;
-    _mint(msg.sender, 10000 ether);
+    _mint(msg.sender, 10020 ether);
   }
 
   /**

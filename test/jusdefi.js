@@ -55,7 +55,7 @@ contract('JusDeFi', function (accounts) {
 
     it('mints and stakes team reserve and transfers to sender', async function () {
       let balance = await jdfiStakingPool.balanceOf.call(DEPLOYER);
-      assert(balance.eq(new BN(web3.utils.toWei('2000'))));
+      assert(balance.eq(new BN(web3.utils.toWei('1980'))));
     });
 
     it('mints and stakes liquidity event reserve', async function () {
@@ -65,7 +65,7 @@ contract('JusDeFi', function (accounts) {
 
     it('mints justice reserve', async function () {
       let balance = await instance.balanceOf.call(airdropToken.address);
-      assert(balance.eq(new BN(web3.utils.toWei('10000'))));
+      assert(balance.eq(new BN(web3.utils.toWei('10020'))));
     });
 
     it('transfers JDFI/E to sender', async function () {

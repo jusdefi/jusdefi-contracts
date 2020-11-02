@@ -39,8 +39,8 @@ contract JusDeFi is IJusDeFi, ERC20 {
 
   mapping (address => bool) private _transferWhitelist;
 
-  uint private constant RESERVE_TEAM = 2000 ether;
-  uint private constant RESERVE_JUSTICE = 10000 ether;
+  uint private constant RESERVE_TEAM = 1980 ether;
+  uint private constant RESERVE_JUSTICE = 10020 ether;
   uint private constant RESERVE_LIQUIDITY_EVENT = 10000 ether;
   uint private constant REWARDS_SEED = 2000 ether;
 
