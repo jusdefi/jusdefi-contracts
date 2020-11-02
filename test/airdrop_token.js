@@ -127,7 +127,7 @@ contract('AirdropToken', function (accounts) {
       await instance.transfer(account, amount, { from: DEPLOYER });
 
       assert((await instance.balanceOf.call(account)).eq(amount));
-      await instance.exchange(account, { from: NOBODY });
+      await instance.exchange({ from: account });
       assert((await instance.balanceOf.call(account)).isZero());
     });
 
@@ -144,7 +144,7 @@ contract('AirdropToken', function (accounts) {
       await instance.transfer(account, amount, { from: DEPLOYER });
 
       assert((await jdfiStakingPool.balanceOf.call(account)).isZero());
-      await instance.exchange(account, { from: NOBODY });
+      await instance.exchange({ from: account });
       assert((await jdfiStakingPool.balanceOf.call(account)).eq(amount));
       assert((await jdfiStakingPool.lockedBalanceOf.call(account)).eq(amount));
     });

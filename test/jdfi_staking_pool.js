@@ -64,7 +64,7 @@ contract('JDFIStakingPool', function (accounts) {
       it('transfer amount exceeds unlocked balance', async function () {
         let amount = new BN(1);
         await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
-        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+        await airdropToken.exchange({ from: NOBODY });
 
         await expectRevert(
           instance.transfer(NOBODY, amount, { from: NOBODY }),
@@ -79,7 +79,7 @@ contract('JDFIStakingPool', function (accounts) {
       it('transfer amount exceeds unlocked balance', async function () {
         let amount = new BN(web3.utils.toWei('1'));
         await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
-        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+        await airdropToken.exchange({ from: NOBODY });
 
         await expectRevert(
           instance.transferFrom(NOBODY, NOBODY, amount, { from: NOBODY }),
@@ -93,7 +93,7 @@ contract('JDFIStakingPool', function (accounts) {
     it('returns locked balance of given account', async function () {
       let amount = new BN(web3.utils.toWei('1'));
       await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
-      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+      await airdropToken.exchange({ from: NOBODY });
 
       assert((await instance.lockedBalanceOf.call(NOBODY)).eq(amount));
     });
@@ -218,7 +218,7 @@ contract('JDFIStakingPool', function (accounts) {
     it('unlocks tokens in exchange for ETH at a ratio of 4:1', async function () {
       let value = new BN(web3.utils.toWei('1'));
       await airdropToken.transfer(NOBODY, value.mul(new BN(4)), { from: DEPLOYER });
-      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+      await airdropToken.exchange({ from: NOBODY });
 
       await instance.unlock({ from: NOBODY, value });
 
@@ -228,7 +228,7 @@ contract('JDFIStakingPool', function (accounts) {
     it('distributes ETH in equal parts to Fee Pool and Dev Staking Pool', async function () {
       let value = new BN(web3.utils.toWei('1'));
       await airdropToken.transfer(NOBODY, value.mul(new BN(4)), { from: DEPLOYER });
-      await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+      await airdropToken.exchange({ from: NOBODY });
 
       await instance.unlock({ from: NOBODY, value });
 
@@ -259,7 +259,7 @@ contract('JDFIStakingPool', function (accounts) {
         );
 
         await airdropToken.transfer(NOBODY, new BN(7), { from: DEPLOYER });
-        await airdropToken.exchange(NOBODY, { from: DEPLOYER });
+        await airdropToken.exchange({ from: NOBODY });
 
         await expectRevert(
           instance.unlock({ from: NOBODY, value: new BN(2) }),

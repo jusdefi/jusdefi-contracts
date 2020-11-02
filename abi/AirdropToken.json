@@ -177,13 +177,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "exchange",
     "outputs": [],
     "stateMutability": "nonpayable",

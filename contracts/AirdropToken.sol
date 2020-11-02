@@ -47,12 +47,11 @@ contract AirdropToken is ERC20 {
   /**
    * @notice exchange tokens for locked JDFI/S
    * @dev JDFI/S is locked in JDFIStakingPool _beforeTokenTransfer hook
-   * @param account address whose tokens to exchange
    */
-  function exchange (address account) external {
-    uint amount = balanceOf(account);
-    _burn(account, amount);
+  function exchange () external {
+    uint amount = balanceOf(msg.sender);
+    _burn(msg.sender, amount);
     IJDFIStakingPool(_jdfiStakingPool).stake(amount);
-    IJDFIStakingPool(_jdfiStakingPool).transfer(account, amount);
+    IJDFIStakingPool(_jdfiStakingPool).transfer(msg.sender, amount);
   }
 }
