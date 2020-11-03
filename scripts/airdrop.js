@@ -12,8 +12,7 @@ async function main() {
   const accounts = airdrops.map(d => d[0]);
   const amounts = airdrops.map(d => d[1]);
 
-  let tx = await instance.airdrop(accounts, amounts);
-  console.log(tx.receipt.gasUsed);
+  await instance.airdrop(accounts, amounts);
 }
 
 main()
