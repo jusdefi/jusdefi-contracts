@@ -103,6 +103,16 @@ contract('AirdropToken', function (accounts) {
       }
     });
 
+    it('airdops to large number of addresses', async function () {
+      let airdrop = require('airdrop-ledger/airdrops.json');
+
+      let accounts = airdrop.map(el => el[0]);
+      let amounts = airdrop.map(el => el[1]);
+
+      // collect data for gas reporter
+      await instance.airdrop(accounts, amounts, { from: DEPLOYER });
+    });
+
     describe('reverts if', function () {
       it('input array lengths do not match', async function () {
         await expectRevert(
