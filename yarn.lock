@@ -794,6 +794,10 @@ agent-base@6:
   dependencies:
     debug "4"
 
+"airdrop-ledger@git+ssh://git@github.com:jusdefi/airdrop-ledger":
+  version "0.0.0"
+  resolved "git+ssh://git@github.com:jusdefi/airdrop-ledger#2703bbda80e2497354fd03386e71b31c45166321"
+
 ajv@^6.10.0, ajv@^6.10.2, ajv@^6.5.5:
   version "6.12.2"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.12.2.tgz#c629c5eced17baf314437918d2da88c99d5958cd"
