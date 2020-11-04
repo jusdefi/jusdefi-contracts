@@ -13,7 +13,7 @@ async function main() {
 
   let json = JSON.stringify(Object.assign(deployments, { jusdefi: instance.address }), null, 2);
 
-  fs.writeFileSync(`${ __dirname }/../data/deployments.json`, json, { flag: 'w' });
+  fs.writeFileSync(`${ __dirname }/../data/deployments.json`, `${ json }\n`, { flag: 'w' });
 }
 
 main()
