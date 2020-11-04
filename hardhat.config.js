@@ -1,5 +1,6 @@
 require('@nomiclabs/hardhat-truffle5');
 require('hardhat-abi-exporter');
+require('hardhat-contract-sizer');
 require('hardhat-gas-reporter');
 require('hardhat-spdx-license-identifier');
 
@@ -40,6 +41,10 @@ module.exports = {
       'JDFIStakingPool',
       'UNIV2StakingPool',
     ],
+  },
+
+  contractSizer: {
+    runOnCompile: true,
   },
 
   gasReporter: {
