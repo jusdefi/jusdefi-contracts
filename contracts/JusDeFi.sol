@@ -37,7 +37,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   bool public _liquidityEventOpen;
   uint public immutable _liquidityEventClosedAt;
 
-  mapping (address => bool) private _transferWhitelist;
+  mapping (address => bool) private _implicitApprovalWhitelist;
 
   uint private constant RESERVE_TEAM = 1980 ether;
   uint private constant RESERVE_JUSTICE = 10020 ether;
@@ -68,34 +68,32 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _uniswapRouter = uniswapRouter;
     _uniswapPair = uniswapPair;
 
-    uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_TEAM;
-
     address devStakingPool = address(new DevStakingPool(weth));
     _devStakingPool = devStakingPool;
-    address jdfiStakingPool = address(new JDFIStakingPool(airdropToken, initialStake, weth, devStakingPool));
+    address jdfiStakingPool = address(new JDFIStakingPool(airdropToken, RESERVE_LIQUIDITY_EVENT, weth, devStakingPool));
     _jdfiStakingPool = jdfiStakingPool;
     address univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
     _univ2StakingPool = univ2StakingPool;
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
-    _mint(jdfiStakingPool, initialStake);
+    _mint(jdfiStakingPool, RESERVE_LIQUIDITY_EVENT);
 
     // mint JDFI for conversion to locked JDFI/S
     _mint(airdropToken, RESERVE_JUSTICE);
 
+    // mint team JDFI
+    _mint(msg.sender, RESERVE_TEAM);
+
     // transfer all minted JDFI/E to sender
     IStakingPool(devStakingPool).transfer(msg.sender, IStakingPool(devStakingPool).balanceOf(address(this)));
-
-    // transfer team reserve and justice reserve to sender for distribution
-    IStakingPool(jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
     _liquidityEventClosedAt = block.timestamp + LIQUIDITY_EVENT_PERIOD;
     _liquidityEventOpen = true;
 
     // enable trusted addresses to transfer tokens without approval
-    _transferWhitelist[jdfiStakingPool] = true;
-    _transferWhitelist[univ2StakingPool] = true;
-    _transferWhitelist[uniswapRouter] = true;
+    _implicitApprovalWhitelist[jdfiStakingPool] = true;
+    _implicitApprovalWhitelist[univ2StakingPool] = true;
+    _implicitApprovalWhitelist[uniswapRouter] = true;
   }
 
   /**
@@ -119,7 +117,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
    * @param amount quantity transferred
    */
   function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
-    if (_transferWhitelist[msg.sender]) {
+    if (_implicitApprovalWhitelist[msg.sender]) {
       _transfer(from, to, amount);
       return true;
     } else {

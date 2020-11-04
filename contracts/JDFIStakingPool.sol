@@ -34,6 +34,9 @@ contract JDFIStakingPool is IJDFIStakingPool, StakingPool {
     _weth = weth;
     _devStakingPool = devStakingPool;
 
+    _addToWhitelist(airdropToken);
+    _addToWhitelist(msg.sender);
+
     // initialSupply is minted before receipt of JDFI; see JusDeFi constructor
     _mint(msg.sender, initialSupply);
 

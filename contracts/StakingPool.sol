@@ -14,6 +14,9 @@ abstract contract StakingPool is IStakingPool, ERC20 {
   mapping (address => uint) private _rewardsExcluded;
   mapping (address => uint) private _rewardsReserved;
 
+  mapping (address => bool) private _transferWhitelist;
+  bool private _skipWhitelist;
+
   /**
    * @notice get rewards of given account available for withdrawal
    * @param account owner of rewards
@@ -47,13 +50,32 @@ abstract contract StakingPool is IStakingPool, ERC20 {
   }
 
   /**
-   * @notice OpenZeppelin ERC20 hook: maintain reward distribution when tokens are transferred
+   * @notice add address to transfer whitelist to allow it to execute transfers
+   * @param account address to add to whitelist
+   */
+  function _addToWhitelist (address account) internal {
+    _transferWhitelist[account] = true;
+  }
+
+  /**
+   * @notice disregard transfer whitelist
+   */
+  function _ignoreWhitelist () internal {
+    _skipWhitelist = true;
+  }
+
+  /**
+   * @notice OpenZeppelin ERC20 hook: prevent manual transfers, maintain reward distribution when tokens are transferred
    * @param from sender
    * @param to recipient
    * @param amount quantity transferred
    */
   function _beforeTokenTransfer (address from, address to, uint amount) virtual override internal {
     super._beforeTokenTransfer(from, to, amount);
+
+    if (from != address(0) && to != address(0)) {
+      require(_transferWhitelist[msg.sender] || _skipWhitelist, 'JusDeFi: staked tokens are non-transferrable');
+    }
 
     uint delta = amount * _cumulativeRewardPerToken;
 

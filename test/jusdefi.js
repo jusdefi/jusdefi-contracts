@@ -53,8 +53,8 @@ contract('JusDeFi', function (accounts) {
       assert.notEqual(univ2StakingPool.address, constants.ZERO_ADDRESS);
     });
 
-    it('mints and stakes team reserve and transfers to sender', async function () {
-      let balance = await jdfiStakingPool.balanceOf.call(DEPLOYER);
+    it('mints team reserve for sender sender', async function () {
+      let balance = await instance.balanceOf.call(DEPLOYER);
       assert(balance.eq(new BN(web3.utils.toWei('1980'))));
     });
 

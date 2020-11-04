@@ -19,4 +19,12 @@ contract StakingPoolMock is StakingPool {
   function clearRewards (address account) external {
     _clearRewards(account);
   }
+
+  function addToWhitelist (address account) external {
+    _addToWhitelist(account);
+  }
+
+  function ignoreWhitelist () external {
+    _ignoreWhitelist();
+  }
 }
