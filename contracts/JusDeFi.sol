@@ -68,26 +68,24 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _uniswapRouter = uniswapRouter;
     _uniswapPair = uniswapPair;
 
-    uint initialStake = RESERVE_LIQUIDITY_EVENT + RESERVE_TEAM;
-
     address devStakingPool = address(new DevStakingPool(weth));
     _devStakingPool = devStakingPool;
-    address jdfiStakingPool = address(new JDFIStakingPool(airdropToken, initialStake, weth, devStakingPool));
+    address jdfiStakingPool = address(new JDFIStakingPool(airdropToken, RESERVE_LIQUIDITY_EVENT, weth, devStakingPool));
     _jdfiStakingPool = jdfiStakingPool;
     address univ2StakingPool = address(new UNIV2StakingPool(uniswapPair, uniswapRouter));
     _univ2StakingPool = univ2StakingPool;
 
     // mint staked JDFI after-the-fact to match minted JDFI/S
-    _mint(jdfiStakingPool, initialStake);
+    _mint(jdfiStakingPool, RESERVE_LIQUIDITY_EVENT);
 
     // mint JDFI for conversion to locked JDFI/S
     _mint(airdropToken, RESERVE_JUSTICE);
 
+    // mint team JDFI
+    _mint(msg.sender, RESERVE_TEAM);
+
     // transfer all minted JDFI/E to sender
     IStakingPool(devStakingPool).transfer(msg.sender, IStakingPool(devStakingPool).balanceOf(address(this)));
-
-    // transfer team reserve and justice reserve to sender for distribution
-    IStakingPool(jdfiStakingPool).transfer(msg.sender, initialStake - RESERVE_LIQUIDITY_EVENT);
 
     _liquidityEventClosedAt = block.timestamp + LIQUIDITY_EVENT_PERIOD;
     _liquidityEventOpen = true;
