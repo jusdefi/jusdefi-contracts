@@ -11,6 +11,7 @@ contract DevStakingPool is StakingPool {
 
   constructor (address weth) ERC20('JDFI ETH Fund', 'JDFI/E') {
     _weth = weth;
+    _ignoreWhitelist();
     _mint(msg.sender, 10000 ether);
   }
 

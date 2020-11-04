@@ -61,14 +61,10 @@ contract('JDFIStakingPool', function (accounts) {
 
   describe('#transfer', function () {
     describe('reverts if', function () {
-      it('transfer amount exceeds unlocked balance', async function () {
-        let amount = new BN(1);
-        await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
-        await airdropToken.exchange({ from: NOBODY });
-
+      it('sender is not JusDeFi or AirdropToken contract', async function () {
         await expectRevert(
-          instance.transfer(NOBODY, amount, { from: NOBODY }),
-          'JusDeFi: amount exceeds unlocked balance'
+          instance.transfer(NOBODY, new BN(0), { from: NOBODY }),
+          'JusDeFi: staked tokens are non-transferrable'
         );
       });
     });
@@ -76,14 +72,10 @@ contract('JDFIStakingPool', function (accounts) {
 
   describe('#transferFrom', function () {
     describe('reverts if', function () {
-      it('transfer amount exceeds unlocked balance', async function () {
-        let amount = new BN(web3.utils.toWei('1'));
-        await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
-        await airdropToken.exchange({ from: NOBODY });
-
+      it('sender is not JusDeFi or AirdropToken contract', async function () {
         await expectRevert(
-          instance.transferFrom(NOBODY, NOBODY, amount, { from: NOBODY }),
-          'JusDeFi: amount exceeds unlocked balance'
+          instance.transferFrom(NOBODY, NOBODY, new BN(0), { from: NOBODY }),
+          'JusDeFi: staked tokens are non-transferrable'
         );
       });
     });
@@ -174,6 +166,19 @@ contract('JDFIStakingPool', function (accounts) {
 
       let burned = amount.mul(fee).div(BP_DIVISOR);
       assert(initialBalance.add(amount).sub(burned).eq(finalBalance));
+    });
+
+    describe('reverts if', function () {
+      it('amount exceeds unlocked balance', async function () {
+        let amount = new BN(web3.utils.toWei('1'));
+        await airdropToken.transfer(NOBODY, amount, { from: DEPLOYER });
+        await airdropToken.exchange({ from: NOBODY });
+
+        await expectRevert(
+          instance.unstake(await instance.balanceOf.call(NOBODY), { from: NOBODY }),
+          'JusDeFi: amount exceeds unlocked balance'
+        );
+      });
     });
   });
 

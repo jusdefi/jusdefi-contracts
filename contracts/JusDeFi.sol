@@ -37,7 +37,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
   bool public _liquidityEventOpen;
   uint public immutable _liquidityEventClosedAt;
 
-  mapping (address => bool) private _transferWhitelist;
+  mapping (address => bool) private _implicitApprovalWhitelist;
 
   uint private constant RESERVE_TEAM = 1980 ether;
   uint private constant RESERVE_JUSTICE = 10020 ether;
@@ -93,9 +93,9 @@ contract JusDeFi is IJusDeFi, ERC20 {
     _liquidityEventOpen = true;
 
     // enable trusted addresses to transfer tokens without approval
-    _transferWhitelist[jdfiStakingPool] = true;
-    _transferWhitelist[univ2StakingPool] = true;
-    _transferWhitelist[uniswapRouter] = true;
+    _implicitApprovalWhitelist[jdfiStakingPool] = true;
+    _implicitApprovalWhitelist[univ2StakingPool] = true;
+    _implicitApprovalWhitelist[uniswapRouter] = true;
   }
 
   /**
@@ -119,7 +119,7 @@ contract JusDeFi is IJusDeFi, ERC20 {
    * @param amount quantity transferred
    */
   function transferFrom (address from, address to, uint amount) override(IERC20, ERC20) public returns (bool) {
-    if (_transferWhitelist[msg.sender]) {
+    if (_implicitApprovalWhitelist[msg.sender]) {
       _transfer(from, to, amount);
       return true;
     } else {

@@ -28,6 +28,8 @@ contract UNIV2StakingPool is StakingPool {
     _uniswapRouter = uniswapRouter;
 
     IERC20(uniswapPair).approve(uniswapRouter, type(uint).max);
+
+    _addToWhitelist(msg.sender);
   }
 
   receive () external payable {

@@ -18,6 +18,7 @@ contract('StakingPool', function (accounts) {
       let amount = new BN(web3.utils.toWei('1'));
       await instance.mint(from, amount);
       await instance.distributeRewards(amount);
+      await instance.addToWhitelist(from);
 
       let initialRewardsOfFrom = await instance.rewardsOf.call(from);
       let initialRewardsOfTo = await instance.rewardsOf.call(to);
@@ -28,6 +29,17 @@ contract('StakingPool', function (accounts) {
       assert(initialRewardsOfFrom.eq(finalRewardsOfFrom));
       assert(initialRewardsOfTo.eq(finalRewardsOfTo));
     });
+
+    describe('reverts if', function () {
+      it('sender is not whitelisted for transfers', async function () {
+        let [from, to] = accounts;
+
+        await expectRevert(
+          instance.transfer(to, new BN(0), { from }),
+          'JusDeFi: staked tokens are non-transferrable'
+        );
+      });
+    });
   });
 
   describe('#transferFrom', function () {
@@ -36,6 +48,8 @@ contract('StakingPool', function (accounts) {
       let amount = new BN(web3.utils.toWei('1'));
       await instance.mint(from, amount);
       await instance.distributeRewards(amount);
+      // await instance.addToWhitelist(from);
+      await instance.addToWhitelist(to);
 
       await instance.approve(to, amount, { from });
 
@@ -48,6 +62,17 @@ contract('StakingPool', function (accounts) {
       assert(initialRewardsOfFrom.eq(finalRewardsOfFrom));
       assert(initialRewardsOfTo.eq(finalRewardsOfTo));
     });
+
+    describe('reverts if', function () {
+      it('sender is not whitelisted for transfers', async function () {
+        let [from, to] = accounts;
+
+        await expectRevert(
+          instance.transferFrom(from, to, new BN(0), { from }),
+          'JusDeFi: staked tokens are non-transferrable'
+        );
+      });
+    });
   });
 
   describe('#rewardsOf', function () {
@@ -55,6 +80,7 @@ contract('StakingPool', function (accounts) {
       let amount = new BN(web3.utils.toWei('1'));
       let [from, to] = accounts;
       await instance.mint(from, amount);
+      await instance.addToWhitelist(from);
 
       assert((await instance.rewardsOf.call(from)).isZero());
 
@@ -114,6 +140,32 @@ contract('StakingPool', function (accounts) {
       assert(!(await instance.rewardsOf.call(holder)).isZero());
       await instance.clearRewards(holder);
       assert((await instance.rewardsOf.call(holder)).isZero());
+    });
+  });
+
+  describe('#_addToWhitelist', function () {
+    it('whitelists given account for transfers', async function () {
+      let [from, to] = accounts;
+      let amount = new BN(web3.utils.toWei('1'));
+      await instance.mint(from, amount);
+
+      await instance.addToWhitelist(from);
+
+      // no revert
+      await instance.transfer(to, amount, { from });
+    });
+  });
+
+  describe('#_ignoreWhitelist', function () {
+    it('implicitly whitelists all accounts for transfers', async function () {
+      let [from, to] = accounts;
+      let amount = new BN(web3.utils.toWei('1'));
+      await instance.mint(from, amount);
+
+      await instance.ignoreWhitelist();
+
+      // no revert
+      await instance.transfer(to, amount, { from });
     });
   });
 });
