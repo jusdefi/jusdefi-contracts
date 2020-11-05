@@ -42,6 +42,7 @@ contract UNIV2StakingPool is StakingPool {
    */
   function compound (uint amountETHMin) external payable {
     uint rewards = rewardsOf(msg.sender);
+    _clearRewards(msg.sender);
 
     (
       ,
@@ -61,7 +62,6 @@ contract UNIV2StakingPool is StakingPool {
     // return remaining ETH to sender
     msg.sender.sendValue(msg.value - amountETH);
 
-    _clearRewards(msg.sender);
     _mint(msg.sender, liquidity);
   }
 
