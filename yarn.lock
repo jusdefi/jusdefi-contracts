@@ -3111,9 +3111,9 @@ hardhat-abi-exporter@^2.0.6:
   integrity sha512-VCXAZ6BXQWPKDV6pvNECYDLRNhYCPQRZwwXfcajwOoiMva99X46hQV7RLzbWjI1gO7WWRtiZLWns+zWvJ6hqUQ==
 
 hardhat-contract-sizer@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/hardhat-contract-sizer/-/hardhat-contract-sizer-2.0.1.tgz#6cff4b7b76fc42261f968104ce32fc1cab5c9627"
-  integrity sha512-kI2lv7nEzOOPDCPqkO7zwQuZBFQ4Cp8xX2xOPBmJA9+A/+waK1YiQQkn6+fUdEUxCKUKaIcjVL96barr7khiTg==
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/hardhat-contract-sizer/-/hardhat-contract-sizer-2.0.2.tgz#735e00c4776188683886226b9b37dfe75cbd16fa"
+  integrity sha512-6vDj3OoqPvzuEnURY2lN6veFXH8uIBRgnaIJoN7cpn7ENuciIR3qotNgLtbC6BNp4y0Cn/8FeMfKS6MdAvIdgQ==
   dependencies:
     cli-table3 "^0.6.0"
     colors "^1.4.0"
