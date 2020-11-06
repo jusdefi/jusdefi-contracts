@@ -1,3 +1,4 @@
+require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-truffle5');
 require('hardhat-abi-exporter');
 require('hardhat-contract-sizer');
