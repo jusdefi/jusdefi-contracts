@@ -15,7 +15,12 @@ async function main() {
 
   await airdropToken.setJDFIStakingPool(await instance._jdfiStakingPool.call());
 
-  let json = JSON.stringify(Object.assign(deployments, { jusdefi: instance.address }), null, 2);
+  deployments.jusdefi = instance.address;
+  deployments.jdfiStakingPool = await instance._jdfiStakingPool.call();
+  deployments.univ2StakingPool = await instance._univ2StakingPool.call();
+  deployments.devStakingPool = await instance._devStakingPool.call();
+
+  let json = JSON.stringify(deployments, null, 2);
 
   fs.writeFileSync(`${ __dirname }/../data/deployments.json`, `${ json }\n`, { flag: 'w' });
 }
