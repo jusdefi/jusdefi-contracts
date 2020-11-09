@@ -17,6 +17,8 @@ const DevStakingPool = artifacts.require('DevStakingPool');
 const UNIV2StakingPool = artifacts.require('UNIV2StakingPool');
 const IUniswapV2Pair = artifacts.require('IUniswapV2Pair');
 const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
+const IWETH = artifacts.require('IWETH');
+const IERC20 = artifacts.require('IERC20');
 
 contract('JusDeFi', function (accounts) {
   const [NOBODY, DEPLOYER, DEPOSITOR] = accounts;
@@ -312,6 +314,23 @@ contract('JusDeFi', function (accounts) {
     it('mints staking pool seed', async function () {
       await closeLiquidityEvent();
       assert((await instance.balanceOf.call(await instance._feePool.call())).eq(new BN(web3.utils.toWei('2000'))));
+    });
+
+    it('executes successfully if Uniswap pair has been synced with WETH deposit', async function () {
+      let router = await IUniswapV2Router02.at(uniswapRouter);
+      let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
+
+      let value = new BN(web3.utils.toWei('1'));
+
+      await (await IWETH.at(await router.WETH.call())).deposit({ from: NOBODY, value });
+      await (await IERC20.at(await router.WETH.call())).transfer(pair.address, value, { from: NOBODY });
+      await pair.sync();
+
+      let { reserve0, reserve1 } = await pair.getReserves.call();
+      assert(!reserve0.add(reserve1).isZero());
+
+      // no revert
+      await closeLiquidityEvent();
     });
 
     describe('reverts if', function () {
