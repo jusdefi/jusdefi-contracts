@@ -43,6 +43,7 @@ module.exports = {
       'UNIV2StakingPool',
       'IUniswapV2Router02',
       'IUniswapV2Pair',
+      'IERC20',
     ],
   },
 
