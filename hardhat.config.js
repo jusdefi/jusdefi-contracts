@@ -41,6 +41,8 @@ module.exports = {
       'FeePool',
       'JDFIStakingPool',
       'UNIV2StakingPool',
+      'IUniswapV2Router02',
+      'IUniswapV2Pair',
     ],
   },
 

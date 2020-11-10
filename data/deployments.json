@@ -1,4 +1,6 @@
 {
+  "uniswapRouter": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  "uniswapPair": "0xaA53Df90b6ce10FEd75D76415Db10ccd35A599D2",
   "airdropToken": "0x1F89ABfc1A80EAe67b8036a49204823e8861eAF6",
   "jusdefi": "0x75cdc4F6be18Dc003dC2Ae424f85D1243f0fB781",
   "jdfiStakingPool": "0x7ec638eE0Ca9591D74b338FCc3aC80ed19B1E6bf",

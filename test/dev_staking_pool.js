@@ -6,7 +6,7 @@ const {
 
 const {
   uniswapRouter,
-} = require('../data/addresses.js');
+} = require('../data/deployments.json');
 
 const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');

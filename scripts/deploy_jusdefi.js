@@ -1,16 +1,12 @@
 const fs = require('fs');
 
-const {
-  uniswapRouter,
-} = require('../data/addresses.js');
-
 let deployments = require('../data/deployments.json');
 
 const JusDeFi = artifacts.require('JusDeFi');
 const AirdropToken = artifacts.require('AirdropToken');
 
 async function main() {
-  const instance = await JusDeFi.new(deployments.airdropToken, uniswapRouter);
+  const instance = await JusDeFi.new(deployments.airdropToken, deployments.uniswapRouter);
   const airdropToken = await AirdropToken.at(deployments.airdropToken);
 
   await airdropToken.setJDFIStakingPool(await instance._jdfiStakingPool.call());
