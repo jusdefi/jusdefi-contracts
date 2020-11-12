@@ -6,12 +6,12 @@ const {
 
 const {
   uniswapRouter,
+  weth,
 } = require('../data/deployments.json');
 
 const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const DevStakingPool = artifacts.require('DevStakingPool');
-const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 const IERC20 = artifacts.require('IERC20');
 const IWETH = artifacts.require('IWETH');
 
@@ -21,12 +21,11 @@ contract('DevStakingPool', function (accounts) {
   let airdropToken;
   let jusdefi;
   let instance;
-  let weth;
+  let wethContract;
 
   before(async function () {
-    let router = await IUniswapV2Router02.at(uniswapRouter);
     await (
-      await IWETH.at(await router.WETH.call())
+      await IWETH.at(weth)
     ).deposit({ from: NOBODY, value: new BN(web3.utils.toWei('1000')) });
   });
 
@@ -36,10 +35,9 @@ contract('DevStakingPool', function (accounts) {
     instance = await DevStakingPool.at(await jusdefi._devStakingPool.call());
     await airdropToken.setJDFIStakingPool(await jusdefi._jdfiStakingPool.call(), { from: DEPLOYER });
 
-    let router = await IUniswapV2Router02.at(uniswapRouter);
-    weth = await IERC20.at(await router.WETH.call());
+    wethContract = await IERC20.at(weth);
 
-    await weth.approve(instance.address, constants.MAX_UINT256, { from: NOBODY });
+    await wethContract.approve(instance.address, constants.MAX_UINT256, { from: NOBODY });
 
     // close liquidity event
 
@@ -66,9 +64,9 @@ contract('DevStakingPool', function (accounts) {
       await instance.distributeRewards(amount, { from: NOBODY });
 
       for (let recipient of [...RECIPIENTS, DEPLOYER]) {
-        let initialWethBalance = await weth.balanceOf.call(recipient);
+        let initialWethBalance = await wethContract.balanceOf.call(recipient);
         await instance.withdraw({ from: recipient });
-        let finalWethBalance = await weth.balanceOf.call(recipient);
+        let finalWethBalance = await wethContract.balanceOf.call(recipient);
 
         let deltaWethBalance = finalWethBalance.sub(initialWethBalance);
         let tokenBalance = await instance.balanceOf.call(recipient);

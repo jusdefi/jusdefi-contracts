@@ -9,6 +9,7 @@ const {
 
 const {
   uniswapRouter,
+  weth,
 } = require('../data/deployments.json');
 
 const AirdropToken = artifacts.require('AirdropToken');
@@ -191,14 +192,13 @@ contract('FeePool', function (accounts) {
 
       let router = await IUniswapV2Router02.at(uniswapRouter);
 
-      let wethAddress = await router.WETH.call();
-      let weth = await IERC20.at(wethAddress);
+      let wethContract = await IERC20.at(weth);
 
-      let balance = await weth.balanceOf.call(await jusdefi._uniswapPair.call());
+      let balance = await wethContract.balanceOf.call(await jusdefi._uniswapPair.call());
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [wethAddress, jusdefi.address],
+        [weth, jusdefi.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value: balance.div(new BN(10000)) }
@@ -206,7 +206,7 @@ contract('FeePool', function (accounts) {
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [wethAddress, jusdefi.address],
+        [weth, jusdefi.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value: balance.div(new BN(10)) }
@@ -228,14 +228,13 @@ contract('FeePool', function (accounts) {
 
       let router = await IUniswapV2Router02.at(uniswapRouter);
 
-      let wethAddress = await router.WETH.call();
-      let weth = await IERC20.at(wethAddress);
+      let wethContract = await IERC20.at(weth);
 
-      let value = (await weth.balanceOf.call(await jusdefi._uniswapPair.call())).div(new BN(10));
+      let value = (await wethContract.balanceOf.call(await jusdefi._uniswapPair.call())).div(new BN(10));
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [wethAddress, jusdefi.address],
+        [weth, jusdefi.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value }
@@ -244,7 +243,7 @@ contract('FeePool', function (accounts) {
       await router.swapExactTokensForETH(
         await jusdefi.balanceOf.call(NOBODY),
         new BN(0),
-        [jusdefi.address, wethAddress],
+        [jusdefi.address, weth],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY }
@@ -290,14 +289,13 @@ contract('FeePool', function (accounts) {
 
         let router = await IUniswapV2Router02.at(uniswapRouter);
 
-        let wethAddress = await router.WETH.call();
-        let weth = await IERC20.at(wethAddress);
+        let wethContract = await IERC20.at(weth);
 
-        let balance = await weth.balanceOf.call(await jusdefi._uniswapPair.call());
+        let balance = await wethContract.balanceOf.call(await jusdefi._uniswapPair.call());
 
         await router.swapExactETHForTokens(
           new BN(0),
-          [wethAddress, jusdefi.address],
+          [weth, jusdefi.address],
           NOBODY,
           constants.MAX_UINT256,
           { from: NOBODY, value: balance.div(new BN(10000)) }
@@ -305,7 +303,7 @@ contract('FeePool', function (accounts) {
 
         await router.swapExactETHForTokens(
           new BN(0),
-          [wethAddress, jusdefi.address],
+          [weth, jusdefi.address],
           NOBODY,
           constants.MAX_UINT256,
           { from: NOBODY, value: balance.div(new BN(10)) }

@@ -7,6 +7,7 @@ const {
 
 const {
   uniswapRouter,
+  weth,
 } = require('../data/deployments.json');
 
 const AirdropToken = artifacts.require('AirdropToken');
@@ -99,7 +100,7 @@ contract('JusDeFi', function (accounts) {
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [await router.WETH.call(), instance.address],
+        [weth, instance.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value }
@@ -111,7 +112,7 @@ contract('JusDeFi', function (accounts) {
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [await router.WETH.call(), instance.address],
+        [weth, instance.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value }
@@ -134,7 +135,7 @@ contract('JusDeFi', function (accounts) {
 
       await router.swapExactETHForTokens(
         new BN(0),
-        [await router.WETH.call(), instance.address],
+        [weth, instance.address],
         NOBODY,
         constants.MAX_UINT256,
         { from: NOBODY, value }
@@ -317,13 +318,12 @@ contract('JusDeFi', function (accounts) {
     });
 
     it('executes successfully if Uniswap pair has been synced with WETH deposit', async function () {
-      let router = await IUniswapV2Router02.at(uniswapRouter);
       let pair = await IUniswapV2Pair.at(await instance._uniswapPair.call());
 
       let value = new BN(web3.utils.toWei('1'));
 
-      await (await IWETH.at(await router.WETH.call())).deposit({ from: NOBODY, value });
-      await (await IERC20.at(await router.WETH.call())).transfer(pair.address, value, { from: NOBODY });
+      await (await IWETH.at(weth)).deposit({ from: NOBODY, value });
+      await (await IERC20.at(weth)).transfer(pair.address, value, { from: NOBODY });
       await pair.sync();
 
       let { reserve0, reserve1 } = await pair.getReserves.call();

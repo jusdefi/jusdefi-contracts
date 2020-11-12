@@ -8,13 +8,13 @@ const {
 
 const {
   uniswapRouter,
+  weth,
 } = require('../data/deployments.json');
 
 const AirdropToken = artifacts.require('AirdropToken');
 const JusDeFi = artifacts.require('JusDeFiMock');
 const FeePool = artifacts.require('FeePool');
 const JDFIStakingPool = artifacts.require('JDFIStakingPool');
-const IUniswapV2Router02 = artifacts.require('IUniswapV2Router02');
 const IERC20 = artifacts.require('IERC20');
 
 contract('JDFIStakingPool', function (accounts) {
@@ -41,9 +41,8 @@ contract('JDFIStakingPool', function (accounts) {
 
   describe('constructor', function () {
     it('approves Dev Staking Pool to spend WETH', async function () {
-      let router = await IUniswapV2Router02.at(uniswapRouter);
-      let weth = await IERC20.at(await router.WETH.call());
-      assert((await weth.allowance.call(instance.address, await jusdefi._devStakingPool.call())).eq(constants.MAX_UINT256));
+      let wethContract = await IERC20.at(weth);
+      assert((await wethContract.allowance.call(instance.address, await jusdefi._devStakingPool.call())).eq(constants.MAX_UINT256));
     });
   });
 
@@ -239,9 +238,8 @@ contract('JDFIStakingPool', function (accounts) {
 
       assert((await balance.current(await jusdefi._feePool.call())).eq(value.div(new BN(2))));
       // Dev Staking Pool value stored as WETH
-      let router = await IUniswapV2Router02.at(uniswapRouter);
-      let weth = await IERC20.at(await router.WETH.call());
-      assert((await weth.balanceOf.call(await jusdefi._devStakingPool.call())).eq(value.div(new BN(2))));
+      let wethContract = await IERC20.at(weth);
+      assert((await wethContract.balanceOf.call(await jusdefi._devStakingPool.call())).eq(value.div(new BN(2))));
     });
 
     describe('reverts if', function () {
