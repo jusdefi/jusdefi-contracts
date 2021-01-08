@@ -12,7 +12,6 @@ module.exports = {
     'plugin:mocha/recommended',
   ],
   'globals': {
-    'usePlugin': 'readonly',
     'web3': 'readonly',
     'artifacts': 'readonly',
     'contract': 'readonly',
