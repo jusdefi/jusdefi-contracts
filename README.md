@@ -52,3 +52,9 @@ Activate gas usage reporting by setting the `REPORT_GAS` environment variable to
 ```bash
 REPORT_GAS=true yarn run hardhat test
 ```
+
+Generate a code coverage report using `solidity-coverage`:
+
+```bash
+yarn run hardhat coverage
+```

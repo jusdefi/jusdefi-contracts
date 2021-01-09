@@ -36,6 +36,7 @@
     "hardhat-abi-exporter": "^2.0.6",
     "hardhat-contract-sizer": "^2.0.1",
     "hardhat-gas-reporter": "^1.0.0",
-    "hardhat-spdx-license-identifier": "^2.0.1"
+    "hardhat-spdx-license-identifier": "^2.0.1",
+    "solidity-coverage": "^0.7.13"
   }
 }

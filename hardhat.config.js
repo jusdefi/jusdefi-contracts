@@ -4,6 +4,7 @@ require('hardhat-abi-exporter');
 require('hardhat-contract-sizer');
 require('hardhat-gas-reporter');
 require('hardhat-spdx-license-identifier');
+require('solidity-coverage');
 
 module.exports = {
   solidity: {
