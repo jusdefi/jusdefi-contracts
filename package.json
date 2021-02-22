@@ -1,5 +1,5 @@
 {
-  "name": "jusdefi",
+  "name": "jusdefi-contracts",
   "version": "0.0.0",
   "license": "UNLICENSED",
   "private": true,
@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jusdefi/jusdefi.git"
+    "url": "git+https://github.com/jusdefi/jusdefi-contracts.git"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-etherscan": "^2.0.0",

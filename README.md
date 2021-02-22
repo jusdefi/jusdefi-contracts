@@ -1,4 +1,4 @@
-# JusDeFi
+# JusDeFi Contracts
 
 Transparent re-implementation of AMPLYFI.
 
